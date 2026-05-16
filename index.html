@@ -60,20 +60,19 @@
 
   /* ── Track tabs ── */
   .track-tabs {
-    display: flex; gap: 8px; padding: 14px 16px;
-    overflow-x: auto; scrollbar-width: none;
+    display: flex; gap: 6px; padding: 10px 12px;
+    flex-wrap: wrap;
   }
-  .track-tabs::-webkit-scrollbar { display: none; }
   .track-tab {
-    flex-shrink: 0; padding: 10px 14px; border-radius: var(--radius);
+    flex: 1 1 110px; max-width: 150px; padding: 8px 10px; border-radius: var(--radius);
     border: 1.5px solid var(--border); background: var(--surface);
-    cursor: pointer; min-width: 130px; transition: all 0.15s;
+    cursor: pointer; transition: all 0.15s;
   }
   .track-tab.active-german { border-color: var(--german); background: var(--german-bg); }
   .track-tab.active-dp100  { border-color: var(--dp100);  background: var(--dp100-bg); }
-  .track-tab-icon  { font-size: 20px; margin-bottom: 4px; }
-  .track-tab-label { font-size: 12px; font-weight: 700; color: var(--text); }
-  .track-tab-bar   { height: 3px; background: var(--subtle); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .track-tab-icon  { font-size: 16px; margin-bottom: 2px; }
+  .track-tab-label { font-size: 11px; font-weight: 700; color: var(--text); }
+  .track-tab-bar   { height: 3px; background: var(--subtle); border-radius: 2px; margin-top: 6px; overflow: hidden; }
   .track-tab-fill  { height: 100%; border-radius: 2px; transition: width 0.4s; }
   .track-tab-pct   { font-size: 10px; font-weight: 700; margin-top: 4px; font-family: 'DM Mono', monospace; }
 
@@ -263,6 +262,29 @@
   .sync-dot.offline { background: #f87171; }
   .sync-dot.nokey   { background: #555; }
   .sync-label { font-size: 10px; color: var(--muted); }
+
+  /* Streak */
+  .streak-badge { display:flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); font-size:11px; font-weight:700; color:#f59e0b; }
+
+  /* Pomodoro */
+  .pomo-bar { display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 12px; }
+  .pomo-time { font-family:'DM Mono',monospace; font-size:15px; font-weight:700; color:var(--text); min-width:42px; }
+  .pomo-btn { background:none; border:none; cursor:pointer; font-size:16px; padding:2px 4px; }
+  .pomo-label { font-size:10px; color:var(--muted); }
+  .pomo-bar.work  { border-color:rgba(99,102,241,0.4); background:rgba(99,102,241,0.08); }
+  .pomo-bar.break { border-color:rgba(52,211,153,0.4); background:rgba(52,211,153,0.08); }
+
+  /* Compact mode */
+  .compact .todo-item { padding:6px 14px; }
+  .compact .todo-text { font-size:12px; }
+  .compact .todo-note, .compact .user-desc { display:none; }
+  .compact .section-header { padding:8px 14px; }
+
+  /* Test selector */
+  .section-check-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+  .section-check-row:last-child { border-bottom:none; }
+  .section-check-label { flex:1; font-size:13px; }
+  .section-check-count { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
 </style>
 </head>
 <body>
@@ -275,7 +297,9 @@
       <span class="sync-label" id="syncLabel">sync kapalı</span>
     </div>
   </div>
-  <div class="header-btns">
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="streak-badge" id="streakBadge">🔥 0</div>
+    <button class="icon-btn" onclick="toggleCompact()" id="compactBtn" title="Kompakt Mod">⊟</button>
     <button class="icon-btn" onclick="openModal('firebase')" title="Firebase Sync">☁</button>
     <button class="icon-btn" onclick="openModal('format')" title="JSON Formatı">?</button>
     <button class="icon-btn" onclick="openModal('import')" title="JSON Yükle">+</button>
@@ -287,9 +311,18 @@
 <div id="sectionsContainer" class="sections"></div>
 <div id="copyToast" style="display:none;position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#34d399;color:#000;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:200;">✓ Kopyalandı!</div>
 
-<div class="bottom-bar">
-  <button class="test-btn" id="exportCheckedBtn" onclick="exportChecked()">Tiklenenlerı Kopyala</button>
-  <button class="test-btn" id="exportCheckedJsonBtn" onclick="exportCheckedJson()" style="flex:0;padding:13px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);">↓ JSON</button>
+<div class="bottom-bar" style="flex-direction:column;gap:8px">
+  <div class="pomo-bar" id="pomoBar">
+    <span class="pomo-label" id="pomoLabel">ÇALIŞMA</span>
+    <span class="pomo-time" id="pomoTime">25:00</span>
+    <button class="pomo-btn" onclick="togglePomo()" id="pomoBtnEl">▶</button>
+    <button class="pomo-btn" onclick="resetPomo()" title="Sıfırla">↺</button>
+  </div>
+  <div style="display:flex;gap:8px;width:100%">
+    <button class="test-btn" id="exportCheckedBtn" onclick="openTestSelector()">Test Oluştur</button>
+    <button class="test-btn" id="exportCheckedJsonBtn" onclick="exportChecked()" style="flex:0;padding:13px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);">📋 Kopyala</button>
+    <button class="test-btn" onclick="exportCheckedJson()" style="flex:0;padding:13px 16px;background:var(--surface);color:var(--text);border:1px solid var(--border);">↓ JSON</button>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -314,7 +347,14 @@ let syncKey = "";
 let saveTimer = null;
 let remoteListener = null;
 let ignoreRemote = false;
-let userDescs = {};  // { itemId: "user description" }
+let userDescs = {};
+let streak = 0;
+let lastActiveDate = "";
+let compactMode = false;
+let pomoSeconds = 25 * 60;
+let pomoRunning = false;
+let pomoInterval = null;
+let pomoIsBreak = false;
 
 const DEFAULT_META = {
   german: { label: "Almanca B2",       icon: "🇩🇪", color: "#f59e0b", cls: "german" },
@@ -378,6 +418,8 @@ function save() {
   try { localStorage.setItem("skt_data",    JSON.stringify(data));    } catch {}
   try { localStorage.setItem("skt_checked", JSON.stringify(checked)); } catch {}
   try { localStorage.setItem("skt_descs",   JSON.stringify(userDescs)); } catch {}
+  try { localStorage.setItem("skt_streak", String(streak)); } catch {}
+  try { localStorage.setItem("skt_last_date", lastActiveDate); } catch {}
   if (db && syncKey) {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(pushToFirebase, 600);
@@ -388,6 +430,9 @@ function load() {
   try { const d = localStorage.getItem("skt_data");    if (d) data    = JSON.parse(d); } catch {}
   try { const c = localStorage.getItem("skt_checked"); if (c) checked = JSON.parse(c); } catch {}
   try { const u = localStorage.getItem("skt_descs");   if (u) userDescs = JSON.parse(u); } catch {}
+  try { streak = parseInt(localStorage.getItem("skt_streak") || "0"); } catch {}
+  try { lastActiveDate = localStorage.getItem("skt_last_date") || ""; } catch {}
+  try { compactMode = localStorage.getItem("skt_compact") === "true"; } catch {}
   if (!Object.keys(data).length) data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   activeTrack = Object.keys(data)[0] || "german";
   // Auto-reconnect if config was saved
@@ -520,32 +565,26 @@ function cancelEdit() {
 
 function updateTestBtn() {
   const btn = document.getElementById("exportCheckedBtn");
-  const cnt = Object.values(checked).filter(Boolean).length;
-  const m = data[activeTrack]?.meta || DEFAULT_META[activeTrack] || {};
+  const t = data[activeTrack];
+  const cnt = (t?.sections || []).flatMap(s => s.items).filter(i => checked[i.id]).length;
+  const m = t?.meta || DEFAULT_META[activeTrack] || {};
   const cls = m.cls || "dp100";
   btn.className = `test-btn test-btn-${cls}`;
-  btn.textContent = `${m.icon || "📋"} Tiklenenlerı Kopyala (${cnt})`;
+  btn.textContent = `${m.icon || "🧪"} Test Oluştur (${cnt})`;
+  updateStreakUI();
 }
 
 // ── Export Checked ────────────────────────────────────────────
 function exportChecked() {
-  const lines = [];
-  for (const [tid, t] of Object.entries(data)) {
-    const m = t.meta || DEFAULT_META[tid] || {};
-    const done = (t.sections || []).flatMap(s =>
-      s.items.filter(i => checked[i.id]).map(i => i.text)
-    );
-    if (done.length) {
-      lines.push(`=== ${m.label} (${done.length} madde) ===`);
-      done.forEach(txt => lines.push(`- ${txt}`));
-      lines.push("");
-    }
-  }
-  if (!lines.length) { alert("Henüz tiklenmiş madde yok."); return; }
-  const text = lines.join("\n").trim();
-  navigator.clipboard.writeText(text).then(() => showToast()).catch(() => {
-    prompt("Kopyala:", text);
-  });
+  const t = data[activeTrack];
+  const m = t?.meta || DEFAULT_META[activeTrack] || {};
+  const done = (t?.sections || []).flatMap(s =>
+    s.items.filter(i => checked[i.id]).map(i => i.text)
+  );
+  if (!done.length) { alert("Bu track'te tiklenmiş madde yok."); return; }
+  const lines = [`=== ${m.label} (${done.length} madde) ===`, ...done.map(t => `- ${t}`)];
+  const text = lines.join("\n");
+  navigator.clipboard.writeText(text).then(() => showToast()).catch(() => prompt("Kopyala:", text));
 }
 
 function exportCheckedJson() {
@@ -564,15 +603,14 @@ function exportCheckedJson() {
 }
 
 function showToast() {
-  const t = document.getElementById("copyToast");
-  t.style.display = "block";
-  setTimeout(() => { t.style.display = "none"; }, 2000);
+  showToastMsg("✓ Kopyalandı!");
 }
 
 function selectTrack(tid) { activeTrack = tid; render(); }
 
 function toggleItem(id) {
   checked[id] = !checked[id];
+  if (checked[id]) updateStreak();
   render();
 }
 
@@ -623,6 +661,153 @@ function exportData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = "skill_tracker_data.json"; a.click();
+}
+
+// ── Streak ───────────────────────────────────────────────────
+function updateStreak() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastActiveDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  streak = (lastActiveDate === yesterday) ? streak + 1 : 1;
+  lastActiveDate = today;
+  try { localStorage.setItem("skt_streak", String(streak)); } catch {}
+  try { localStorage.setItem("skt_last_date", today); } catch {}
+  updateStreakUI();
+}
+
+function updateStreakUI() {
+  const el = document.getElementById("streakBadge");
+  if (el) el.textContent = `🔥 ${streak || 0}`;
+}
+
+// ── Compact mode ──────────────────────────────────────────────
+function toggleCompact() {
+  compactMode = !compactMode;
+  try { localStorage.setItem("skt_compact", String(compactMode)); } catch {}
+  document.getElementById("sectionsContainer").classList.toggle("compact", compactMode);
+  document.getElementById("compactBtn").style.opacity = compactMode ? "1" : "0.6";
+}
+
+// ── Pomodoro ──────────────────────────────────────────────────
+function updatePomoUI() {
+  const m = Math.floor(pomoSeconds / 60).toString().padStart(2, "0");
+  const s = (pomoSeconds % 60).toString().padStart(2, "0");
+  document.getElementById("pomoTime").textContent = `${m}:${s}`;
+  document.getElementById("pomoBtnEl").textContent = pomoRunning ? "⏸" : "▶";
+  document.getElementById("pomoLabel").textContent = pomoIsBreak ? "MOLA" : "ÇALIŞMA";
+  const bar = document.getElementById("pomoBar");
+  bar.className = "pomo-bar " + (pomoIsBreak ? "break" : "work");
+}
+
+function togglePomo() {
+  if (pomoRunning) {
+    clearInterval(pomoInterval); pomoRunning = false;
+  } else {
+    pomoRunning = true;
+    pomoInterval = setInterval(() => {
+      pomoSeconds--;
+      if (pomoSeconds <= 0) {
+        clearInterval(pomoInterval); pomoRunning = false;
+        pomoIsBreak = !pomoIsBreak;
+        pomoSeconds = pomoIsBreak ? 5 * 60 : 25 * 60;
+        try { new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...").play(); } catch {}
+        showToastMsg(pomoIsBreak ? "☕ Mola zamanı! 5 dakika." : "💪 Çalışma zamanı! 25 dakika.");
+      }
+      updatePomoUI();
+    }, 1000);
+  }
+  updatePomoUI();
+}
+
+function resetPomo() {
+  clearInterval(pomoInterval); pomoRunning = false;
+  pomoIsBreak = false; pomoSeconds = 25 * 60;
+  updatePomoUI();
+}
+
+function showToastMsg(msg) {
+  const t = document.getElementById("copyToast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(() => { t.style.display = "none"; t.textContent = "✓ Kopyalandı!"; }, 3000);
+}
+
+// ── Test Selector ─────────────────────────────────────────────
+function openTestSelector() {
+  const t = data[activeTrack];
+  const m = t?.meta || DEFAULT_META[activeTrack] || {};
+  if (!t?.sections?.length) { alert("Bu track boş."); return; }
+
+  const overlay = document.getElementById("modalOverlay");
+  document.getElementById("modalTitle").textContent = `${m.icon} Test Konularını Seç`;
+  document.getElementById("modalBody").innerHTML = `
+    <p class="hint" style="margin-bottom:12px">Hangi bölümlerden test oluşturulsun? Sadece tiklenmiş maddeler kullanılır.</p>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="selectAllSections(true)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Tümünü Seç</button>
+      <button onclick="selectAllSections(false)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Hiçbirini Seçme</button>
+    </div>
+    <div id="sectionCheckList">
+    ${t.sections.map((sec, si) => {
+      const cnt = sec.items.filter(i => checked[i.id]).length;
+      return `<label class="section-check-row">
+        <input type="checkbox" id="sec_${si}" ${cnt > 0 ? 'checked' : ''} style="accent-color:${m.color || '#818cf8'}">
+        <span class="section-check-label">${sec.title}</span>
+        <span class="section-check-count">${cnt}/${sec.items.length} tikli</span>
+      </label>`;
+    }).join("")}
+    </div>
+    <button class="apply-btn" style="background:${m.color || '#818cf8'}" onclick="runTestFromSelector()">Test Oluştur</button>
+  `;
+  overlay.style.display = "flex";
+}
+
+function selectAllSections(val) {
+  document.querySelectorAll("#sectionCheckList input[type=checkbox]").forEach(cb => cb.checked = val);
+}
+
+async function runTestFromSelector() {
+  const t = data[activeTrack];
+  const m = t?.meta || DEFAULT_META[activeTrack] || {};
+  const selected = [...document.querySelectorAll("#sectionCheckList input[type=checkbox]")]
+    .map((cb, si) => cb.checked ? t.sections[si] : null).filter(Boolean);
+
+  const done = selected.flatMap(sec => sec.items.filter(i => checked[i.id]).map(i => i.text));
+  if (!done.length) { alert("Seçili bölümlerde tiklenmiş madde yok."); return; }
+
+  closeModal();
+
+  const testOut = document.getElementById("testOutput") || (() => {
+    const d = document.createElement("div"); d.id = "testOutput"; d.className = "test-output";
+    document.getElementById("sectionsContainer").after(d); return d;
+  })();
+  const titleEl = document.getElementById("testTitle") || (() => { const s=document.createElement("span"); s.id="testTitle"; return s; })();
+  const bodyEl  = document.getElementById("testBody")  || (() => { const s=document.createElement("div");  s.id="testBody";  return s; })();
+
+  if (!testOut.querySelector("#testTitle")) {
+    const hdr = document.createElement("div"); hdr.className = "test-header";
+    const cls = document.createElement("button"); cls.className = "test-close-btn"; cls.textContent = "✕";
+    cls.onclick = () => testOut.style.display = "none";
+    hdr.append(titleEl, cls); testOut.append(hdr, bodyEl);
+  }
+
+  testOut.style.display = "block";
+  titleEl.textContent = `${m.icon} Test — ${done.length} madde, ${selected.length} bölüm`;
+  bodyEl.innerHTML = `<span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>`;
+  testOut.scrollIntoView({behavior:"smooth"});
+
+  const isGerman = activeTrack === "german";
+  const list = done.join("\n");
+  const prompt = isGerman
+    ? `Almanca öğrencisi şu konuları tamamladı:\n${list}\n\n8 soruluk test oluştur. 3 çoktan seçmeli (4 şık, doğrusu işaretli), 3 boşluk doldurma, 2 cümle yazma görevi. Türkçe açıklamalı, Almanca pratikli. Her sorudan sonra kısa kural hatırlatması ekle.`
+    : `Student completed:\n${list}\n\nGenerate 8 technical questions: 3 multiple choice (mark correct), 3 short answer, 2 code/practical tasks. Brief explanation after each answer.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, messages:[{role:"user",content:prompt}] })
+    });
+    const d = await res.json();
+    bodyEl.textContent = d.content?.map(b=>b.text||"").join("") || "Yanıt alınamadı.";
+  } catch(e) { bodyEl.textContent = "Bağlantı hatası: " + e.message; }
 }
 
 // ── Modals ────────────────────────────────────────────────────
@@ -987,6 +1172,12 @@ const DEFAULT_DATA = {
 load();
 render();
 setSyncStatus(db ? "syncing" : "nokey");
+updateStreakUI();
+updatePomoUI();
+if (compactMode) {
+  document.getElementById("sectionsContainer").classList.add("compact");
+  document.getElementById("compactBtn").style.opacity = "1";
+}
 </script>
 </body>
 </html>
