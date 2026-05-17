@@ -13,176 +13,116 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-:root {
-  --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222; --border: #2a2a2a;
-  --text: #f0f0f0; --muted: #666; --subtle: #333;
-  --radius: 12px; --radius-sm: 8px;
-}
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 80px; overscroll-behavior: none; }
-
-/* Header */
-.header { position: sticky; top: 0; z-index: 50; background: rgba(15,15,15,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.header-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
-.sync-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.sync-dot.synced { background: #34d399; } .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; } .sync-dot.offline { background: #f87171; } .sync-dot.nokey { background: #444; }
-.streak-badge { display: flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 20px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); font-size: 11px; font-weight: 700; color: #f59e0b; white-space: nowrap; }
-.header-btns { display: flex; gap: 6px; flex-shrink: 0; }
-.icon-btn { width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-/* Pomodoro bar */
-.pomo-sticky { position: sticky; top: 57px; z-index: 49; background: rgba(15,15,15,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
-.pomo-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.pomo-time { font-family: 'DM Mono', monospace; font-size: 17px; font-weight: 700; min-width: 48px; }
-.pomo-time.work  { color: #818cf8; }
-.pomo-time.break { color: #34d399; }
-.pomo-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; padding: 4px 10px; cursor: pointer; }
-.pomo-progress { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
-.pomo-fill { height: 100%; border-radius: 2px; transition: none; }
-.pomo-fill.work  { background: #818cf8; }
-.pomo-fill.break { background: #34d399; }
-
-/* Track tabs */
-.track-tabs { display: flex; gap: 6px; padding: 10px 12px; flex-wrap: wrap; }
-.track-tab { flex: 1 1 110px; max-width: 150px; padding: 8px 10px; border-radius: var(--radius); border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-.track-tab-icon { font-size: 16px; margin-bottom: 2px; }
-.track-tab-label { font-size: 11px; font-weight: 700; }
-.track-tab-bar { height: 3px; background: var(--subtle); border-radius: 2px; margin-top: 6px; overflow: hidden; }
-.track-tab-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-.track-tab-pct { font-size: 10px; font-weight: 700; margin-top: 3px; font-family: 'DM Mono', monospace; }
-
-/* Sections */
-.sections { padding: 0 12px; }
-.section { margin-bottom: 8px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-.section-header { display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; background: var(--surface); user-select: none; }
-.section-title { flex: 1; font-size: 13px; font-weight: 700; }
-.section-badge { font-size: 10px; font-family: 'DM Mono', monospace; }
-.section-arrow { font-size: 10px; color: var(--muted); }
-
-/* Todo items */
-.todo-item { display: flex; gap: 10px; padding: 10px 14px; cursor: pointer; align-items: flex-start; border-top: 1px solid var(--border); background: var(--surface); transition: background 0.1s; position: relative; }
-.todo-item:active { background: var(--subtle); }
-.checkbox { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px; border: 2px solid var(--subtle); background: transparent; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.checkbox svg { display: none; }
-.todo-text { font-size: 13px; line-height: 1.5; flex: 1; }
-.todo-text.done { color: var(--muted); text-decoration: line-through; }
-.todo-note { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.user-desc { font-size: 12px; color: #888; margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
-.edit-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; margin-top: 1px; }
-.todo-item:hover .edit-btn { opacity: 0.6; }
-.todo-item:active .edit-btn { opacity: 1; }
-/* Always show on mobile (no hover) */
-@media (hover: none) { .edit-btn { opacity: 0.35; } }
-.desc-textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 12px; font-family: 'DM Sans', sans-serif; resize: none; outline: none; margin-top: 6px; line-height: 1.5; min-height: 60px; }
-.desc-textarea:focus { border-color: #818cf8; }
-.desc-actions { display: flex; gap: 6px; margin-top: 6px; }
-.desc-save { padding: 5px 14px; border-radius: 6px; border: none; background: #818cf8; color: #000; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-.desc-cancel { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 11px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-
-/* Empty */
-.empty { text-align: center; padding: 50px 20px; color: var(--muted); }
-.empty-icon { font-size: 36px; margin-bottom: 10px; }
-
-/* Bottom bar */
-.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,15,15,0.97); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 8px; }
-.btn { flex: 1; padding: 12px 8px; border-radius: var(--radius); border: none; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
-.btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); flex: 0; padding: 12px 14px; }
-
-/* Toast */
-.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #34d399; color: #000; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 300; display: none; }
-
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
-.modal { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
-.modal-handle { width: 36px; height: 4px; background: var(--subtle); border-radius: 2px; margin: 12px auto 0; flex-shrink: 0; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 10px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
-.modal-title { font-size: 15px; font-weight: 700; }
-.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; }
-.modal-body { padding: 16px 20px 20px; overflow-y: auto; flex: 1; }
-
-/* Modal elements */
-textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-family: 'DM Mono', monospace; font-size: 12px; resize: vertical; line-height: 1.6; outline: none; }
-textarea:focus { border-color: #818cf8; }
-input[type="text"], input[type="password"] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-family: 'DM Mono', monospace; font-size: 12px; outline: none; }
-input:focus { border-color: #818cf8; }
-.apply-btn { width: 100%; padding: 13px; border-radius: var(--radius); border: none; background: #818cf8; color: #000; font-weight: 700; font-size: 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-top: 12px; }
-.radio-row { display: flex; gap: 16px; margin-bottom: 12px; }
-.radio-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
-input[type="radio"] { accent-color: #818cf8; }
-.hint { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
-.settings-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; display: block; }
-.file-btn { display: inline-block; padding: 8px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 12px; cursor: pointer; margin-bottom: 10px; }
-.error-msg { color: #f87171; font-size: 12px; margin-top: 8px; }
-pre.format-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-family: 'DM Mono', monospace; font-size: 11px; overflow-x: auto; line-height: 1.7; color: #a3e635; white-space: pre-wrap; word-break: break-word; }
-
-/* Section check */
-.sec-check-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-.sec-check-row:last-child { border-bottom: none; }
-.sec-check-label { flex: 1; font-size: 13px; }
-.sec-check-count { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-
-/* Coach panel */
-.coach-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end; }
-.coach-panel { background: var(--surface); border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; padding-bottom: env(safe-area-inset-bottom); }
-.coach-handle { width: 36px; height: 4px; background: var(--subtle); border-radius: 2px; margin: 12px auto 0; }
-.coach-header { padding: 14px 20px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-.coach-title { font-size: 16px; font-weight: 700; }
-.coach-body { padding: 16px 20px 24px; }
-.coach-section { margin-bottom: 20px; }
-.coach-section-title { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
-.plan-item { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); margin-bottom: 6px; }
-.plan-item-track { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; display: inline-block; width: fit-content; margin-bottom: 3px; }
-.plan-item-text { font-size: 13px; line-height: 1.4; }
-.plan-item-why { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.plan-item-dur { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); flex-shrink: 0; padding-top: 2px; }
-.new-task-card { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
-.new-task-header { padding: 10px 12px; background: var(--bg); display: flex; align-items: center; gap: 8px; }
-.new-task-items { padding: 8px 12px 10px; }
-.new-task-item { font-size: 12px; padding: 3px 0; display: flex; gap: 6px; }
-.add-tasks-btn { margin-top: 8px; padding: 7px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-.mini-q { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
-.mini-q:last-child { border-bottom: none; }
-.coach-loading { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 40px 20px; color: var(--muted); }
-.coach-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: #ec4899; border-radius: 50%; animation: spin 0.8s linear infinite; }
-
-/* Daily route panel */
-.route-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-.route-item:last-child { border-bottom: none; }
-.route-time { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; width: 60px; flex-shrink: 0; padding-top: 2px; }
-.route-content { flex: 1; }
-.route-track { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-bottom: 3px; }
-.route-task { font-size: 13px; font-weight: 500; line-height: 1.4; }
-.route-why { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.route-dur { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); flex-shrink: 0; padding-top: 2px; }
-
-/* Test output */
-.test-output { margin: 0 12px 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.test-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--surface); font-size: 12px; font-weight: 700; }
-.test-body { padding: 14px; font-size: 12.5px; line-height: 1.8; white-space: pre-wrap; max-height: 400px; overflow-y: auto; background: var(--bg); }
-
-/* Dots loader */
-.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: pulse 1s ease-in-out infinite; }
-.dot:nth-child(2) { animation-delay: 0.2s; } .dot:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
-@keyframes spin { to { transform: rotate(360deg); } }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--border:#2a2a2a;--text:#f0f0f0;--muted:#666;--subtle:#333;--radius:12px;--radius-sm:8px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;overscroll-behavior:none}
+.header{position:sticky;top:0;z-index:50;background:rgba(15,15,15,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.header-left{display:flex;align-items:center;gap:8px;min-width:0}
+.header-title{font-size:16px;font-weight:700;letter-spacing:-0.3px;white-space:nowrap}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.synced{background:#34d399}.sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}.sync-dot.offline{background:#f87171}.sync-dot.nokey{background:#444}
+.streak-badge{display:flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);font-size:11px;font-weight:700;color:#f59e0b;white-space:nowrap}
+.header-btns{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{width:34px;height:34px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pomo-sticky{position:sticky;top:57px;z-index:49;background:rgba(15,15,15,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px}
+.pomo-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em}
+.pomo-time{font-family:'DM Mono',monospace;font-size:17px;font-weight:700;min-width:48px}
+.pomo-time.work{color:#818cf8}.pomo-time.break{color:#34d399}
+.pomo-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:4px 10px;cursor:pointer}
+.pomo-progress{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.pomo-fill{height:100%;border-radius:2px;transition:none}
+.pomo-fill.work{background:#818cf8}.pomo-fill.break{background:#34d399}
+.track-tabs{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap}
+.track-tab{flex:1 1 110px;max-width:150px;padding:8px 10px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color 0.15s,background 0.15s}
+.track-tab-icon{font-size:16px;margin-bottom:2px}
+.track-tab-label{font-size:11px;font-weight:700}
+.track-tab-bar{height:3px;background:var(--subtle);border-radius:2px;margin-top:6px;overflow:hidden}
+.track-tab-fill{height:100%;border-radius:2px;transition:width 0.4s}
+.track-tab-pct{font-size:10px;font-weight:700;margin-top:3px;font-family:'DM Mono',monospace}
+.sections{padding:0 12px}
+.section{margin-bottom:8px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.section-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;background:var(--surface);user-select:none}
+.section-title{flex:1;font-size:13px;font-weight:700}
+.section-badge{font-size:10px;font-family:'DM Mono',monospace}
+.section-arrow{font-size:10px;color:var(--muted)}
+.todo-item{display:flex;gap:10px;padding:10px 14px;cursor:pointer;align-items:flex-start;border-top:1px solid var(--border);background:var(--surface);transition:background 0.1s;position:relative}
+.todo-item:active{background:var(--subtle)}
+.checkbox{width:18px;height:18px;border-radius:5px;flex-shrink:0;margin-top:1px;border:2px solid var(--subtle);background:transparent;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.todo-text{font-size:13px;line-height:1.5;flex:1}
+.todo-text.done{color:var(--muted);text-decoration:line-through}
+.todo-note{font-size:11px;color:var(--muted);margin-top:3px}
+.user-desc{font-size:12px;color:#888;margin-top:4px;line-height:1.5;white-space:pre-wrap}
+.edit-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity 0.15s;margin-top:1px}
+.todo-item:hover .edit-btn{opacity:0.6}
+@media(hover:none){.edit-btn{opacity:0.35}}
+.desc-textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:12px;font-family:'DM Sans',sans-serif;resize:none;outline:none;margin-top:6px;line-height:1.5;min-height:60px}
+.desc-textarea:focus{border-color:#818cf8}
+.desc-actions{display:flex;gap:6px;margin-top:6px}
+.desc-save{padding:5px 14px;border-radius:6px;border:none;background:#818cf8;color:#000;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif}
+.desc-cancel{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:10px}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(15,15,15,0.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px}
+.btn{flex:1;padding:12px 8px;border-radius:var(--radius);border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);flex:0;padding:12px 14px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#34d399;color:#000;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:300;display:none}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center;z-index:100}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.modal-handle{width:36px;height:4px;background:var(--subtle);border-radius:2px;margin:12px auto 0;flex-shrink:0}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.modal-body{padding:16px 20px 20px;overflow-y:auto;flex:1}
+textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:'DM Mono',monospace;font-size:12px;resize:vertical;line-height:1.6;outline:none}
+textarea:focus{border-color:#818cf8}
+input[type="text"],input[type="password"]{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-family:'DM Mono',monospace;font-size:12px;outline:none}
+input:focus{border-color:#818cf8}
+.apply-btn{width:100%;padding:13px;border-radius:var(--radius);border:none;background:#818cf8;color:#000;font-weight:700;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:12px}
+.radio-row{display:flex;gap:16px;margin-bottom:12px}
+.radio-label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+input[type="radio"]{accent-color:#818cf8}
+.hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.settings-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;margin-top:10px}
+.file-btn{display:inline-block;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;margin-bottom:10px}
+.error-msg{color:#f87171;font-size:12px;margin-top:8px;min-height:16px}
+pre.format-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:'DM Mono',monospace;font-size:11px;overflow-x:auto;line-height:1.7;color:#a3e635;white-space:pre-wrap;word-break:break-word}
+.sec-check-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.sec-check-row:last-child{border-bottom:none}
+.sec-check-label{flex:1;font-size:13px}
+.sec-check-count{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.coach-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:flex;flex-direction:column;justify-content:flex-end}
+.coach-panel{background:var(--surface);border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+.coach-handle{width:36px;height:4px;background:var(--subtle);border-radius:2px;margin:12px auto 0}
+.coach-header{padding:14px 20px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.coach-title{font-size:16px;font-weight:700}
+.coach-body{padding:16px 20px 24px}
+.coach-section{margin-bottom:20px}
+.coach-section-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px}
+.test-output{margin:0 12px 12px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.test-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);font-size:12px;font-weight:700}
+.test-body{padding:14px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;max-height:400px;overflow-y:auto;background:var(--bg)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);animation:pulse 1s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:0.2s}.dot:nth-child(3){animation-delay:0.4s}
+@keyframes pulse{0%,100%{opacity:0.3}50%{opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:#ec4899;border-radius:50%;animation:spin 0.8s linear infinite}
 </style>
 </head>
 <body>
+
 <script>
-(function() {
+(function(){
   var t = localStorage.getItem('skill_token');
   if (!t) { window.location.replace('/login.html'); return; }
   window._authToken = t;
 })();
 </script>
 
-<!-- Header -->
 <div class="header">
   <div class="header-left">
     <span class="header-title">Skill Tracker</span>
-    <div style="display:flex;align-items:center;gap:4px"><div class="sync-dot nokey" id="syncDot"></div><span style="font-size:10px;color:var(--muted)" id="syncLabel">—</span></div>
+    <div class="sync-dot nokey" id="syncDot"></div>
+    <span style="font-size:10px;color:var(--muted)" id="syncLabel"></span>
     <div class="streak-badge" id="streakBadge">🔥 0</div>
   </div>
   <div class="header-btns">
@@ -195,7 +135,6 @@ pre.format-block { background: var(--bg); border: 1px solid var(--border); borde
   </div>
 </div>
 
-<!-- Pomodoro sticky bar -->
 <div class="pomo-sticky">
   <span class="pomo-label" id="pomoLabel">ÇALIŞMA</span>
   <span class="pomo-time work" id="pomoTime">25:00</span>
@@ -206,10 +145,8 @@ pre.format-block { background: var(--bg); border: 1px solid var(--border); borde
 
 <div class="track-tabs" id="trackTabs"></div>
 <div id="sectionsContainer" class="sections"></div>
-
 <div class="toast" id="toast">✓</div>
 
-<!-- Bottom bar -->
 <div class="bottom-bar">
   <button class="btn" onclick="openCoach()" style="background:#ec4899;color:#fff;font-size:14px">🎯 Koç</button>
   <button class="btn" onclick="openTestSelector()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border)">🧪 Test</button>
@@ -217,7 +154,6 @@ pre.format-block { background: var(--bg); border: 1px solid var(--border); borde
   <button class="btn btn-ghost" onclick="exportCheckedJson()">↓</button>
 </div>
 
-<!-- Coach panel -->
 <div id="coachOverlay" class="coach-overlay" style="display:none" onclick="closeCoach()">
   <div class="coach-panel" onclick="event.stopPropagation()">
     <div class="coach-handle"></div>
@@ -229,7 +165,6 @@ pre.format-block { background: var(--bg); border: 1px solid var(--border); borde
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal()">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
@@ -242,68 +177,209 @@ pre.format-block { background: var(--bg); border: 1px solid var(--border); borde
 </div>
 
 <script>
-// ── Render ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+var data = {}, checked = {}, userDescs = {};
+var activeTrack = "";
+var db = null, syncKey = "";
+var saveTimer = null, ignoreRemote = false;
+var streak = 0, lastActiveDate = "";
+var allCollapsed = false, editingId = null;
+var pomoSeconds = 1500, pomoTotal = 1500;
+var pomoRunning = false, pomoInterval = null, pomoIsBreak = false;
+var currentMode = "merge";
+
+// ═══════════════════════════════════════════════════════════════
+// SYNC STATUS
+// ═══════════════════════════════════════════════════════════════
+function setSyncStatus(s) {
+  var dot = document.getElementById("syncDot");
+  var lbl = document.getElementById("syncLabel");
+  if (dot) dot.className = "sync-dot " + s;
+  if (lbl) {
+    lbl.textContent = {synced:"✓", syncing:"...", offline:"✗", nokey:""}[s] || "";
+    lbl.style.color = {synced:"#34d399", syncing:"#f59e0b", offline:"#f87171", nokey:"var(--muted)"}[s] || "var(--muted)";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════════════════════
+function connectFirebase(config, key) {
+  // Delete existing apps first
+  var apps = firebase.apps;
+  var deletePromises = apps.map(function(app) { return app.delete(); });
+  Promise.all(deletePromises).then(function() {
+    firebase.initializeApp(config);
+    db = firebase.database();
+    syncKey = key;
+    try { localStorage.setItem("skt_fb_config", JSON.stringify(config)); } catch(e) {}
+    try { localStorage.setItem("skt_fb_key", key); } catch(e) {}
+    startFirebaseListener();
+    setSyncStatus("syncing");
+  }).catch(function(e) {
+    // If delete fails, try directly
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(config);
+      db = firebase.database();
+      syncKey = key;
+      try { localStorage.setItem("skt_fb_config", JSON.stringify(config)); } catch(e2) {}
+      try { localStorage.setItem("skt_fb_key", key); } catch(e2) {}
+      startFirebaseListener();
+      setSyncStatus("syncing");
+    } catch(e2) {
+      setSyncStatus("offline");
+      console.error("Firebase:", e2);
+    }
+  });
+}
+
+function startFirebaseListener() {
+  if (!db || !syncKey) return;
+  db.ref(syncKey).on("value", function(snap) {
+    if (ignoreRemote) return;
+    var val = snap.val();
+    if (!val) { pushToFirebase(); return; }
+    if (val.data)      { data      = val.data;      saveLocal("skt_data",    data); }
+    if (val.checked)   { checked   = val.checked;   saveLocal("skt_checked", checked); }
+    if (val.userDescs) { userDescs = val.userDescs; saveLocal("skt_descs",   userDescs); }
+    if (!activeTrack || !data[activeTrack]) activeTrack = Object.keys(data)[0] || "";
+    render();
+    setSyncStatus("synced");
+  }, function() { setSyncStatus("offline"); });
+}
+
+function pushToFirebase() {
+  if (!db || !syncKey) return;
+  ignoreRemote = true;
+  setSyncStatus("syncing");
+  db.ref(syncKey).set({ data: data, checked: checked, userDescs: userDescs })
+    .then(function() { setSyncStatus("synced"); })
+    .catch(function() { setSyncStatus("offline"); })
+    .finally(function() { setTimeout(function() { ignoreRemote = false; }, 300); });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+function saveLocal(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+function save() {
+  saveLocal("skt_data", data);
+  saveLocal("skt_checked", checked);
+  saveLocal("skt_descs", userDescs);
+  try { localStorage.setItem("skt_streak", String(streak)); } catch(e) {}
+  try { localStorage.setItem("skt_last_date", lastActiveDate); } catch(e) {}
+  if (db && syncKey) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(pushToFirebase, 800);
+  }
+}
+
+function load() {
+  try { var d = localStorage.getItem("skt_data");    if (d) data      = JSON.parse(d); } catch(e) {}
+  try { var c = localStorage.getItem("skt_checked"); if (c) checked   = JSON.parse(c); } catch(e) {}
+  try { var u = localStorage.getItem("skt_descs");   if (u) userDescs = JSON.parse(u); } catch(e) {}
+  try { streak = parseInt(localStorage.getItem("skt_streak") || "0") || 0; } catch(e) {}
+  try { lastActiveDate = localStorage.getItem("skt_last_date") || ""; } catch(e) {}
+  if (!Object.keys(data).length) data = {};
+  activeTrack = Object.keys(data)[0] || "";
+  // Auto-reconnect Firebase
+  try {
+    var cfg = localStorage.getItem("skt_fb_config");
+    var key = localStorage.getItem("skt_fb_key");
+    if (cfg && key) connectFirebase(JSON.parse(cfg), key);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function allItems(tid)   { return ((data[tid] || {}).sections || []).reduce(function(a,s){ return a.concat(s.items); }, []); }
+function doneCount(tid)  { return allItems(tid).filter(function(i){ return checked[i.id]; }).length; }
+function pct(tid)        { var t = allItems(tid).length; return t ? Math.round(doneCount(tid)/t*100) : 0; }
+function trackColor(tid) { return ((data[tid] || {}).meta || {}).color || "#818cf8"; }
+function trackCls(tid)   { return ((data[tid] || {}).meta || {}).cls   || "dp100"; }
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
 function render() { renderTabs(); renderSections(); updateStreak(); save(); }
 
 function renderTabs() {
-  document.getElementById("trackTabs").innerHTML = Object.entries(data).map(([tid, t]) => {
-    const m = t.meta || {}; const p = pct(tid);
-    const active = tid === activeTrack ? `border-color:${m.color||'#818cf8'};background:${(m.color||'#818cf8')}15` : "";
-    return `<div class="track-tab" style="${active}" onclick="selectTrack('${tid}')">
-      <div class="track-tab-icon">${m.icon||"📋"}</div>
-      <div class="track-tab-label">${m.label||tid}</div>
-      <div class="track-tab-bar"><div class="track-tab-fill" style="width:${p}%;background:${m.color||'#818cf8'}"></div></div>
-      <div class="track-tab-pct" style="color:${m.color||'#818cf8'}">${doneCount(tid)}/${allItems(tid).length} · ${p}%</div>
-    </div>`;
+  var el = document.getElementById("trackTabs");
+  if (!el) return;
+  el.innerHTML = Object.keys(data).map(function(tid) {
+    var t = data[tid], m = t.meta || {}, p = pct(tid);
+    var active = tid === activeTrack ? "border-color:"+m.color+";background:"+m.color+"15" : "";
+    return '<div class="track-tab" style="'+active+'" onclick="selectTrack(\''+tid+'\')">'+
+      '<div class="track-tab-icon">'+(m.icon||"📋")+'</div>'+
+      '<div class="track-tab-label">'+(m.label||tid)+'</div>'+
+      '<div class="track-tab-bar"><div class="track-tab-fill" style="width:'+p+'%;background:'+(m.color||"#818cf8")+'"></div></div>'+
+      '<div class="track-tab-pct" style="color:'+(m.color||"#818cf8")+'">'+doneCount(tid)+'/'+allItems(tid).length+' · '+p+'%</div>'+
+      '</div>';
   }).join("");
 }
 
-let collapsed = {};
+var collapsed = {};
 function renderSections() {
-  const t = data[activeTrack]; const color = trackColor(activeTrack); const cls = trackCls(activeTrack);
-  const container = document.getElementById("sectionsContainer");
-  if (!t?.sections?.length) {
-    container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>Bu track boş.<br>+ JSON Yükle ile ekle.</p></div>`; return;
+  var container = document.getElementById("sectionsContainer");
+  if (!container) return;
+  var t = data[activeTrack];
+  if (!t || !t.sections || !t.sections.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>Bu track boş.<br>+ ile JSON yükle.</p></div>';
+    return;
   }
-  container.innerHTML = (t.sections || []).map((sec, si) => {
-    const sk = `${activeTrack}-${si}`;
-    const isCol = allCollapsed || collapsed[sk];
-    const secDone = sec.items.filter(i => checked[i.id]).length;
-    const allDone = secDone === sec.items.length && sec.items.length > 0;
-    const hdrStyle = allDone ? `background:${color}15;border-bottom:1px solid ${color}30` : "";
-    const items = isCol ? "" : sec.items.map(item => {
-      const ck = !!checked[item.id]; const desc = userDescs[item.id] || ""; const isEd = editingId === item.id;
-      const chkStyle = ck ? `background:${color};border-color:${color}` : "";
-      const chkCls   = ck ? "done" : "";
-      return `<div class="todo-item ${ck ? 'checked-item' : ''}" id="item-${item.id}" style="${ck ? `background:${color}10` : ''}">
-        <div class="checkbox" style="${chkStyle}" onclick="toggleItem('${item.id}')">
-          ${ck ? `<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>` : ""}
-        </div>
-        <div style="flex:1;min-width:0" onclick="${isEd ? '' : `toggleItem('${item.id}')`}">
-          <div class="todo-text ${chkCls}">${item.text}</div>
-          ${item.note && !isEd ? `<div class="todo-note">💡 ${item.note}</div>` : ""}
-          ${desc && !isEd ? `<div class="user-desc">${desc}</div>` : ""}
-          ${isEd ? `<textarea class="desc-textarea" id="desc-${item.id}" onclick="event.stopPropagation()">${desc}</textarea>
-            <div class="desc-actions" onclick="event.stopPropagation()">
-              <button class="desc-save" onclick="saveDesc('${item.id}')">Kaydet</button>
-              <button class="desc-cancel" onclick="cancelEdit()">İptal</button>
-            </div>` : ""}
-        </div>
-        <button class="edit-btn" onclick="event.stopPropagation();startEdit('${item.id}')">✏️</button>
-      </div>`;
+  var color = trackColor(activeTrack);
+  container.innerHTML = t.sections.map(function(sec, si) {
+    var sk = activeTrack+"-"+si;
+    var isCol = allCollapsed || collapsed[sk];
+    var secDone = sec.items.filter(function(i){ return checked[i.id]; }).length;
+    var allDone = secDone === sec.items.length && sec.items.length > 0;
+    var hdrStyle = allDone ? "background:"+color+"15;border-bottom:1px solid "+color+"30" : "";
+    var itemsHtml = isCol ? "" : sec.items.map(function(item) {
+      var ck = !!checked[item.id];
+      var desc = userDescs[item.id] || "";
+      var isEd = editingId === item.id;
+      var chkStyle = ck ? "background:"+color+";border-color:"+color : "";
+      return '<div class="todo-item" id="item-'+item.id+'" style="'+(ck?"background:"+color+"10":"")+'">' +
+        '<div class="checkbox" style="'+chkStyle+'" onclick="toggleItem(\''+item.id+'\')">' +
+          (ck ? '<svg width="10" height="8" viewBox="0 0 10 8"><path d="M1 4L3.5 6.5L9 1" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>' : '') +
+        '</div>' +
+        '<div style="flex:1;min-width:0" onclick="'+(isEd?"":"toggleItem('"+item.id+"')")+'">' +
+          '<div class="todo-text '+(ck?"done":"")+'">'+item.text+'</div>' +
+          (item.note && !isEd ? '<div class="todo-note">💡 '+item.note+'</div>' : '') +
+          (desc && !isEd ? '<div class="user-desc">'+desc+'</div>' : '') +
+          (isEd ?
+            '<textarea class="desc-textarea" id="desc-'+item.id+'" onclick="event.stopPropagation()">'+desc+'</textarea>' +
+            '<div class="desc-actions" onclick="event.stopPropagation()">' +
+              '<button class="desc-save" onclick="saveDesc(\''+item.id+'\')">Kaydet</button>' +
+              '<button class="desc-cancel" onclick="cancelEdit()">İptal</button>' +
+            '</div>' : '') +
+        '</div>' +
+        '<button class="edit-btn" onclick="event.stopPropagation();startEdit(\''+item.id+'\')">✏️</button>' +
+        '</div>';
     }).join("");
-    return `<div class="section">
-      <div class="section-header" style="${hdrStyle}" onclick="toggleSection('${sk}')">
-        <span class="section-title">${sec.title}</span>
-        <span class="section-badge" style="color:${color}">${secDone}/${sec.items.length}</span>
-        <span class="section-arrow">${isCol ? "▼" : "▲"}</span>
-      </div>${items}
-    </div>`;
+    return '<div class="section">'+
+      '<div class="section-header" style="'+hdrStyle+'" onclick="toggleSection(\''+sk+'\')">'+
+        '<span class="section-title">'+sec.title+'</span>'+
+        '<span class="section-badge" style="color:'+color+'">'+secDone+'/'+sec.items.length+'</span>'+
+        '<span class="section-arrow">'+(isCol?"▼":"▲")+'</span>'+
+      '</div>'+itemsHtml+
+      '</div>';
   }).join("");
 }
 
 function selectTrack(tid) { activeTrack = tid; render(); }
-function toggleSection(sk) { collapsed[sk] = !collapsed[sk]; renderSections(); }
+
+function toggleSection(sk) {
+  collapsed[sk] = !collapsed[sk];
+  renderSections();
+}
+
 function toggleAllSections() {
   allCollapsed = !allCollapsed;
   document.getElementById("collapseBtn").style.opacity = allCollapsed ? "1" : "0.7";
@@ -311,50 +387,78 @@ function toggleAllSections() {
 }
 
 function toggleItem(id) {
-  checked[id] = !checked[id]; updateStreak(); render();
+  checked[id] = !checked[id];
+  updateStreak();
+  render();
 }
 
-// ── Edit ──────────────────────────────────────────────────────
-function startEdit(id) { editingId = id; renderSections(); setTimeout(() => { const ta = document.getElementById("desc-"+id); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }, 50); }
-function saveDesc(id) { const ta = document.getElementById("desc-"+id); if (!ta) return; const v = ta.value.trim(); if (v) userDescs[id] = v; else delete userDescs[id]; editingId = null; save(); renderSections(); }
+// ═══════════════════════════════════════════════════════════════
+// EDIT
+// ═══════════════════════════════════════════════════════════════
+function startEdit(id) {
+  editingId = id;
+  renderSections();
+  setTimeout(function() {
+    var ta = document.getElementById("desc-"+id);
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+  }, 50);
+}
+
+function saveDesc(id) {
+  var ta = document.getElementById("desc-"+id);
+  if (!ta) return;
+  var v = ta.value.trim();
+  if (v) userDescs[id] = v; else delete userDescs[id];
+  editingId = null;
+  save();
+  renderSections();
+}
+
 function cancelEdit() { editingId = null; renderSections(); }
 
-// ── Streak ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STREAK
+// ═══════════════════════════════════════════════════════════════
 function updateStreak() {
-  const today = new Date().toISOString().slice(0,10);
-  if (lastActiveDate !== today && Object.values(checked).some(Boolean)) {
-    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  var today = new Date().toISOString().slice(0,10);
+  if (lastActiveDate !== today && Object.keys(checked).some(function(k){ return checked[k]; })) {
+    var yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
     streak = (lastActiveDate === yesterday) ? streak+1 : 1;
     lastActiveDate = today;
   }
-  const el = document.getElementById("streakBadge"); if (el) el.textContent = `🔥 ${streak}`;
+  var el = document.getElementById("streakBadge");
+  if (el) el.textContent = "🔥 " + streak;
 }
 
-// ── Pomodoro ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// POMODORO
+// ═══════════════════════════════════════════════════════════════
 function updatePomoUI() {
-  try {
-    var mm = Math.floor(pomoSeconds/60).toString().padStart(2,"0");
-    var ss = (pomoSeconds%60).toString().padStart(2,"0");
-    var timeEl = document.getElementById("pomoTime");
-    var btnEl  = document.getElementById("pomoBtnEl");
-    var lblEl  = document.getElementById("pomoLabel");
-    var fill   = document.getElementById("pomoFill");
-    if (timeEl) { timeEl.textContent = mm+":"+ss; timeEl.className = "pomo-time "+(pomoIsBreak?"break":"work"); }
-    if (btnEl)  { btnEl.textContent = pomoRunning ? "⏸" : "▶"; }
-    if (lblEl)  { lblEl.textContent = pomoIsBreak ? "MOLA" : "ÇALIŞMA"; }
-    if (fill)   { fill.style.width = Math.round(pomoSeconds/pomoTotal*100)+"%"; fill.className = "pomo-fill "+(pomoIsBreak?"break":"work"); }
-  } catch(e) { console.error("pomoUI error:", e); }
+  var mm = Math.floor(pomoSeconds/60).toString().padStart(2,"0");
+  var ss = (pomoSeconds%60).toString().padStart(2,"0");
+  var timeEl = document.getElementById("pomoTime");
+  var btnEl  = document.getElementById("pomoBtnEl");
+  var lblEl  = document.getElementById("pomoLabel");
+  var fill   = document.getElementById("pomoFill");
+  if (timeEl) { timeEl.textContent = mm+":"+ss; timeEl.className = "pomo-time "+(pomoIsBreak?"break":"work"); }
+  if (btnEl)  btnEl.textContent = pomoRunning ? "⏸" : "▶";
+  if (lblEl)  lblEl.textContent = pomoIsBreak ? "MOLA" : "ÇALIŞMA";
+  if (fill)   { fill.style.width = Math.round(pomoSeconds/pomoTotal*100)+"%"; fill.className = "pomo-fill "+(pomoIsBreak?"break":"work"); }
 }
+
 function togglePomo() {
-  if (pomoRunning) { clearInterval(pomoInterval); pomoRunning = false; }
-  else {
+  if (pomoRunning) {
+    clearInterval(pomoInterval);
+    pomoRunning = false;
+  } else {
     pomoRunning = true;
-    pomoInterval = setInterval(() => {
+    pomoInterval = setInterval(function() {
       pomoSeconds--;
       if (pomoSeconds <= 0) {
-        clearInterval(pomoInterval); pomoRunning = false;
+        clearInterval(pomoInterval);
+        pomoRunning = false;
         pomoIsBreak = !pomoIsBreak;
-        pomoTotal = pomoSeconds = pomoIsBreak ? 5*60 : 25*60;
+        pomoTotal = pomoSeconds = pomoIsBreak ? 300 : 1500;
         toast(pomoIsBreak ? "☕ Mola! 5 dakika." : "💪 Çalışma! 25 dakika.", 4000);
       }
       updatePomoUI();
@@ -362,391 +466,393 @@ function togglePomo() {
   }
   updatePomoUI();
 }
-function resetPomo() { clearInterval(pomoInterval); pomoRunning = false; pomoIsBreak = false; pomoTotal = pomoSeconds = 25*60; updatePomoUI(); }
 
-// ── Toast ─────────────────────────────────────────────────────
-function toast(msg, dur=2500) { const t = document.getElementById("toast"); t.textContent = msg; t.style.display = "block"; setTimeout(()=>t.style.display="none", dur); }
-
-// ── Export ────────────────────────────────────────────────────
-function exportChecked() {
-  const t = data[activeTrack]; const m = t?.meta || {};
-  const done = (t?.sections||[]).flatMap(s => s.items.filter(i=>checked[i.id]).map(i=>i.text));
-  if (!done.length) { alert("Bu track'te tiklenmiş madde yok."); return; }
-  const text = [`=== ${m.label||activeTrack} (${done.length} madde) ===`, ...done.map(t=>`- ${t}`)].join("\n");
-  navigator.clipboard.writeText(text).then(()=>toast("✓ Kopyalandı")).catch(()=>prompt("Kopyala:", text));
+function resetPomo() {
+  clearInterval(pomoInterval);
+  pomoRunning = false; pomoIsBreak = false;
+  pomoTotal = pomoSeconds = 1500;
+  updatePomoUI();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, dur) {
+  var t = document.getElementById("toast");
+  if (!t) return;
+  t.textContent = msg;
+  t.style.display = "block";
+  setTimeout(function() { t.style.display = "none"; }, dur || 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportChecked() {
+  var t = data[activeTrack], m = (t || {}).meta || {};
+  var done = ((t || {}).sections || []).reduce(function(a,s) {
+    return a.concat(s.items.filter(function(i){ return checked[i.id]; }).map(function(i){ return i.text; }));
+  }, []);
+  if (!done.length) { alert("Bu track'te tiklenmiş madde yok."); return; }
+  var text = "=== "+(m.label||activeTrack)+" ("+done.length+" madde) ===\n"+done.map(function(t){ return "- "+t; }).join("\n");
+  navigator.clipboard.writeText(text).then(function(){ toast("✓ Kopyalandı"); }).catch(function(){ prompt("Kopyala:", text); });
+}
+
 function exportCheckedJson() {
-  const result = Object.entries(data).map(([tid,t]) => {
-    const done = (t.sections||[]).flatMap(s=>s.items.filter(i=>checked[i.id]).map(i=>({id:i.id,text:i.text})));
-    return done.length ? {track:tid,trackLabel:t.meta?.label,completed:done} : null;
+  var result = Object.keys(data).map(function(tid) {
+    var t = data[tid], m = (t.meta||{});
+    var done = (t.sections||[]).reduce(function(a,s){
+      return a.concat(s.items.filter(function(i){ return checked[i.id]; }).map(function(i){ return {id:i.id,text:i.text}; }));
+    },[]);
+    return done.length ? {track:tid, trackLabel:m.label, completed:done} : null;
   }).filter(Boolean);
   if (!result.length) { alert("Tiklenmiş madde yok."); return; }
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:"application/json"})); a.download = "tamamlananlar.json"; a.click();
-}
-function exportData() {
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download = "skill_tracker_data.json"; a.click();
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:"application/json"}));
+  a.download = "tamamlananlar.json"; a.click();
 }
 
-// ── JSON Import ───────────────────────────────────────────────
-let currentMode = "merge";
+function exportData() {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+  a.download = "skill_tracker_data.json"; a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// JSON IMPORT
+// ═══════════════════════════════════════════════════════════════
 function applyJson(json, mode) {
-  let parsed; try { parsed = JSON.parse(json); } catch { return "Geçersiz JSON."; }
-  const blocks = Array.isArray(parsed) ? parsed : [parsed];
-  let newData = mode==="replace" ? {} : JSON.parse(JSON.stringify(data));
-  for (const block of blocks) {
-    const tid = block.track; if (!tid) return "'track' alanı zorunlu.";
-    if (!newData[tid]) newData[tid] = { meta: { label:block.trackLabel||tid, icon:block.icon||"📋", color:block.color||"#818cf8", cls:block.cls||"dp100" }, sections: [] };
+  var parsed;
+  try { parsed = JSON.parse(json); } catch(e) { return "Geçersiz JSON: "+e.message; }
+  var blocks = Array.isArray(parsed) ? parsed : [parsed];
+  var newData = mode === "replace" ? {} : JSON.parse(JSON.stringify(data));
+  for (var bi = 0; bi < blocks.length; bi++) {
+    var block = blocks[bi];
+    var tid = block.track;
+    if (!tid) return "'track' alanı zorunlu.";
+    if (!newData[tid]) {
+      newData[tid] = { meta: { label:block.trackLabel||tid, icon:block.icon||"📋", color:block.color||"#818cf8", cls:block.cls||"dp100" }, sections:[] };
+    }
     if (block.section && block.items) {
-      const ex = newData[tid].sections.find(s=>s.title===block.section);
-      if (ex && mode==="merge") { const ids = new Set(ex.items.map(i=>i.id)); block.items.forEach(item=>{if(!ids.has(item.id))ex.items.push(item);}); }
-      else newData[tid].sections.push({title:block.section,items:block.items});
+      var ex = null;
+      for (var si = 0; si < newData[tid].sections.length; si++) {
+        if (newData[tid].sections[si].title === block.section) { ex = newData[tid].sections[si]; break; }
+      }
+      if (ex && mode === "merge") {
+        var ids = {};
+        ex.items.forEach(function(i){ ids[i.id] = true; });
+        block.items.forEach(function(item){ if (!ids[item.id]) ex.items.push(item); });
+      } else {
+        newData[tid].sections.push({title:block.section, items:block.items});
+      }
     }
   }
-  data = newData; activeTrack = Object.keys(data)[0]||""; render(); return null;
+  data = newData;
+  activeTrack = Object.keys(data)[0] || "";
+  render();
+  return null;
 }
 
-// ── OpenAI ────────────────────────────────────────────────────
-async function callAI(messages, jsonMode=false) {
-  const msgs = typeof messages==="string" ? [{role:"user",content:messages}] : messages;
-  const res = await fetch("/api/ai", { method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+(window._authToken||"")}, body:JSON.stringify({messages:msgs,jsonMode}) });
-  if (res.status===401) { localStorage.removeItem("skill_token"); window.location.replace("/login.html"); throw new Error("Auth expired"); }
-  const d = await res.json(); if (d.error) throw new Error(d.error); return d.content;
+// ═══════════════════════════════════════════════════════════════
+// AI
+// ═══════════════════════════════════════════════════════════════
+function callAI(messages, jsonMode, callback) {
+  var msgs = typeof messages === "string" ? [{role:"user",content:messages}] : messages;
+  fetch("/api/ai", {
+    method: "POST",
+    headers: {"Content-Type":"application/json","Authorization":"Bearer "+(window._authToken||"")},
+    body: JSON.stringify({messages:msgs, jsonMode:!!jsonMode})
+  }).then(function(res) {
+    if (res.status === 401) { localStorage.removeItem("skill_token"); window.location.replace("/login.html"); return; }
+    return res.json();
+  }).then(function(d) {
+    if (!d) return;
+    if (d.error) { callback(null, d.error); return; }
+    callback(d.content, null);
+  }).catch(function(e) { callback(null, e.message); });
 }
 
 function buildCtx() {
-  const lines = [`Tarih: ${new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"})}`, `Streak: ${streak} gün`];
-  for (const [tid, t] of Object.entries(data)) {
-    const m = t.meta||{}; const all = (t.sections||[]).flatMap(s=>s.items); const done = all.filter(i=>checked[i.id]);
-    lines.push(`\n[${m.icon} ${m.label}] ${done.length}/${all.length} (${Math.round(done.length/Math.max(all.length,1)*100)}%)`);
-    const weak = (t.sections||[]).map(s=>({title:s.title,done:s.items.filter(i=>checked[i.id]).length,total:s.items.length})).filter(s=>s.total>0&&s.done/s.total<0.3).slice(0,2);
-    if (weak.length) lines.push(`  Zayıf: ${weak.map(s=>`"${s.title}" ${s.done}/${s.total}`).join(", ")}`);
-    const next = all.filter(i=>!checked[i.id]).slice(0,3).map(i=>`"${i.text.slice(0,50)}"`);
-    if (next.length) lines.push(`  Sıradaki: ${next.join(", ")}`);
-  }
+  var lines = ["Tarih: "+new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"}), "Streak: "+streak+" gün"];
+  Object.keys(data).forEach(function(tid) {
+    var t = data[tid], m = t.meta||{};
+    var all = (t.sections||[]).reduce(function(a,s){ return a.concat(s.items); },[]);
+    var done = all.filter(function(i){ return checked[i.id]; });
+    lines.push("\n["+m.icon+" "+m.label+"] "+done.length+"/"+all.length+" (%"+Math.round(done.length/Math.max(all.length,1)*100)+")");
+    var weak = (t.sections||[]).map(function(s){ return {title:s.title,done:s.items.filter(function(i){ return checked[i.id]; }).length,total:s.items.length}; })
+      .filter(function(s){ return s.total>0 && s.done/s.total<0.3; }).slice(0,2);
+    if (weak.length) lines.push("  Zayıf: "+weak.map(function(s){ return '"'+s.title+'" '+s.done+'/'+s.total; }).join(", "));
+  });
   return lines.join("\n");
 }
 
-// ── Coach (interactive, 2-step) ──────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// COACH
+// ═══════════════════════════════════════════════════════════════
+var coachMinutes = 60;
+
 function openCoach() {
   document.getElementById("coachOverlay").style.display = "flex";
-
-  // Build track list for selection
-  const tracks = Object.entries(data);
+  var tracks = Object.keys(data);
   if (!tracks.length) {
-    document.getElementById("coachBody").innerHTML = `<p style="color:var(--muted);padding:20px;font-size:13px">Henüz hiç track yok. + JSON Yükle ile başla.</p>`;
+    document.getElementById("coachBody").innerHTML = '<p style="color:var(--muted);padding:20px;font-size:13px">Henüz hiç track yok. + ile JSON yükle.</p>';
     return;
   }
-
-  const trackHtml = tracks.map(([tid, t]) => {
-    const m = t.meta || {}; const all = (t.sections||[]).flatMap(s=>s.items);
-    const remaining = all.filter(i => !checked[i.id]).length;
+  var trackHtml = tracks.map(function(tid) {
+    var t = data[tid], m = t.meta||{};
+    var remaining = (t.sections||[]).reduce(function(a,s){ return a+s.items.filter(function(i){ return !checked[i.id]; }).length; },0);
     if (!remaining) return "";
-    return `<label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
-      <input type="checkbox" class="track-sel" value="${tid}" checked style="accent-color:${m.color||'#818cf8'};width:16px;height:16px">
-      <span style="flex:1">
-        <span style="font-size:14px;margin-right:6px">${m.icon||"📋"}</span>
-        <span style="font-size:13px;font-weight:600">${m.label||tid}</span>
-      </span>
-      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">${remaining} madde</span>
-    </label>`;
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">'+
+      '<input type="checkbox" class="track-sel" value="'+tid+'" checked style="accent-color:'+(m.color||"#818cf8")+';width:16px;height:16px">'+
+      '<span style="flex:1"><span style="font-size:14px;margin-right:6px">'+(m.icon||"📋")+'</span>'+
+      '<span style="font-size:13px;font-weight:600">'+(m.label||tid)+'</span></span>'+
+      '<span style="font-size:11px;color:var(--muted);font-family:\'DM Mono\',monospace">'+remaining+' madde</span></label>';
   }).filter(Boolean).join("");
 
-  document.getElementById("coachBody").innerHTML = `
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Bugün hangi konulara bakacaksın?</p>
-    <div id="trackSel" style="margin-bottom:20px">${trackHtml}</div>
-    <div style="margin-bottom:20px">
-      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px">Kaç saat vaktın var?</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${[30,60,90,120].map(m=>`<button onclick="selectTime(${m})" class="time-btn" id="t${m}" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">${m<60?m+"dk":m/60+" saat"}</button>`).join("")}
-        <input type="number" id="customTime" placeholder="Dk" min="15" max="480"
-          style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:center"
-          oninput="selectTime(parseInt(this.value)||60)">
-      </div>
-    </div>
-    <button class="apply-btn" style="background:#ec4899" onclick="generateCoachPlan()">Plan Oluştur →</button>
-  `;
-  window._coachMinutes = 60;
-  selectTime(60);
+  document.getElementById("coachBody").innerHTML =
+    '<p style="font-size:13px;color:var(--muted);margin-bottom:16px">Bugün hangi konulara bakacaksın?</p>'+
+    '<div id="trackSel" style="margin-bottom:20px">'+trackHtml+'</div>'+
+    '<div style="margin-bottom:20px">'+
+      '<div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px">Kaç dakikan var?</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        [30,60,90,120].map(function(m){ return '<button onclick="setCoachTime('+m+')" id="ct'+m+'" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer">'+(m<60?m+"dk":m/60+" saat")+'</button>'; }).join("")+
+        '<input type="number" id="customTime" placeholder="Dk" min="15" max="480" style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;text-align:center" oninput="setCoachTime(parseInt(this.value)||60)">'+
+      '</div>'+
+    '</div>'+
+    '<button class="apply-btn" style="background:#ec4899" onclick="generateCoachPlan()">Plan Oluştur →</button>';
+  setCoachTime(60);
 }
 
-function selectTime(mins) {
-  window._coachMinutes = mins;
-  document.querySelectorAll(".time-btn").forEach(b => {
-    b.style.background = parseInt(b.id.replace("t","")) === mins ? "#ec4899" : "var(--surface2)";
-    b.style.color = parseInt(b.id.replace("t","")) === mins ? "#000" : "var(--text)";
+function setCoachTime(mins) {
+  coachMinutes = mins;
+  [30,60,90,120].forEach(function(m) {
+    var btn = document.getElementById("ct"+m);
+    if (btn) { btn.style.background = m===mins?"#ec4899":"var(--surface2)"; btn.style.color = m===mins?"#000":"var(--text)"; }
   });
 }
 
-async function generateCoachPlan() {
-  const selectedTracks = [...document.querySelectorAll(".track-sel:checked")].map(cb => cb.value);
+function generateCoachPlan() {
+  var selectedTracks = [];
+  document.querySelectorAll(".track-sel:checked").forEach(function(cb){ selectedTracks.push(cb.value); });
   if (!selectedTracks.length) { alert("En az bir track seç."); return; }
-  const minutes = window._coachMinutes || 60;
 
-  document.getElementById("coachBody").innerHTML = `<div class="coach-loading"><div class="coach-spinner"></div><span>Plan hazırlanıyor...</span></div>`;
+  document.getElementById("coachBody").innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px;color:var(--muted)"><div class="spinner"></div><span>Plan hazırlanıyor...</span></div>';
 
-  // Build unticked items per selected track
-  const context = selectedTracks.map(tid => {
-    const t = data[tid]; if (!t) return null;
-    const m = t.meta || {};
-    const sections = (t.sections||[]).map(sec => {
-      const unticked = sec.items.filter(i => !checked[i.id]);
-      return unticked.length ? { bolum: sec.title, gorevler: unticked.map(i => ({id:i.id, metin:i.text})) } : null;
+  var context = selectedTracks.map(function(tid) {
+    var t = data[tid]; if (!t) return null;
+    var m = t.meta||{};
+    var sections = (t.sections||[]).map(function(sec) {
+      var unticked = sec.items.filter(function(i){ return !checked[i.id]; });
+      return unticked.length ? {bolum:sec.title, gorevler:unticked.map(function(i){ return {id:i.id,metin:i.text}; })} : null;
     }).filter(Boolean);
-    return sections.length ? { track: tid, ad: m.label||tid, ikon: m.icon||"", bolumler: sections } : null;
+    return sections.length ? {track:tid, ad:m.label||tid, ikon:m.icon||"", bolumler:sections} : null;
   }).filter(Boolean);
 
   if (!context.length) {
-    document.getElementById("coachBody").innerHTML = `<p style="color:var(--muted);padding:20px;font-size:13px">Seçili track'lerde tamamlanmamış madde yok. 🎉</p>`; return;
+    document.getElementById("coachBody").innerHTML = '<p style="color:var(--muted);padding:20px;font-size:13px">Seçili track\'lerde tamamlanmamış madde yok 🎉</p>';
+    return;
   }
 
-  const sys = `Sen Tarik'in öğrenme koçusun. TU Münih MSc (Eylül 2026), Rohde & Schwarz PMO çalışıyor, Almanca/AI/ML öğreniyor. Türkçe, net ve motive edici ol.`;
-  const usr = `Öğrenci ${minutes} dakika çalışacak. Seçilen konulardaki TIKLANMAMIŞ görevler:
-${JSON.stringify(context,null,2)}
+  var sys = "Sen Tarik'in öğrenme koçusun. TU Münih MSc (Eylül 2026), Rohde & Schwarz PMO, Almanca/AI/ML öğreniyor. Türkçe, net ve motive edici ol.";
+  var usr = "Öğrenci "+coachMinutes+" dakika çalışacak. Tamamlanmamış görevler:\n"+JSON.stringify(context,null,2)+"\n\nSadece JSON ver:\n{\"motivasyon\":\"1 kısa cümle\",\"plan\":[{\"sira\":1,\"track_id\":\"id\",\"bolum\":\"bölüm\",\"gorev\":\"görev metni\",\"sure\":20,\"neden\":\"neden öncelikli\"}]}";
 
-Bugün için sıralı plan yap. Toplam süre ${minutes} dakikayı geçmesin.
-
-Sadece JSON ver:
-{"motivasyon":"1 kısa cümle","plan":[{"sira":1,"track_id":"id","bolum":"bölüm adı","gorev_id":"id","gorev":"görev metni","sure":20,"neden":"neden öncelikli"}]}`;
-
-  try {
-    const raw = await callAI([{role:"system",content:sys},{role:"user",content:usr}], true);
-    const r = JSON.parse(raw);
-    renderCoachPlan(r, selectedTracks, minutes);
-  } catch(e) {
-    document.getElementById("coachBody").innerHTML = `<p style="color:#f87171;padding:20px">${e.message}</p>`;
-  }
+  callAI([{role:"system",content:sys},{role:"user",content:usr}], true, function(raw, err) {
+    if (err) { document.getElementById("coachBody").innerHTML = '<p style="color:#f87171;padding:20px">'+err+'</p>'; return; }
+    var r;
+    try { r = JSON.parse(raw); } catch(e) { document.getElementById("coachBody").innerHTML = '<p style="color:#f87171;padding:20px">JSON parse hatası</p>'; return; }
+    renderCoachPlan(r);
+  });
 }
 
-function renderCoachPlan(r, selectedTracks, minutes) {
-  const tc = Object.fromEntries(Object.entries(data).map(([tid,t])=>[tid,{color:t.meta?.color||"#818cf8",label:t.meta?.label||tid,icon:t.meta?.icon||""}]));
-  let html = "";
-
-  if (r.motivasyon) html += `<div style="padding:10px 14px;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.25);border-radius:10px;margin-bottom:16px;font-size:13px;line-height:1.5;color:var(--text);font-style:italic">"${r.motivasyon}"</div>`;
-
-  const plan = r.plan || [];
-  let total = 0;
-  plan.forEach((item, idx) => {
-    total += item.sure || 0;
-    const tm = tc[item.track_id] || {color:"#818cf8",label:item.track_id,icon:""};
-    html += `<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-      <div style="width:28px;height:28px;border-radius:50%;background:${tm.color}20;color:${tm.color};font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${idx+1}</div>
-      <div style="flex:1;min-width:0">
-        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:${tm.color}20;color:${tm.color};display:inline-block;margin-bottom:4px">${tm.icon} ${tm.label}</span>
-        <div style="font-size:13px;font-weight:500;line-height:1.4;margin-bottom:2px">${item.gorev}</div>
-        <div style="font-size:11px;color:var(--muted)">${item.bolum} · ${item.neden||""}</div>
-      </div>
-      <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);flex-shrink:0;padding-top:4px">${item.sure}dk</div>
-    </div>`;
+function renderCoachPlan(r) {
+  var tc = {};
+  Object.keys(data).forEach(function(tid){ tc[tid] = {color:(data[tid].meta||{}).color||"#818cf8",label:(data[tid].meta||{}).label||tid,icon:(data[tid].meta||{}).icon||""}; });
+  var html = "";
+  if (r.motivasyon) html += '<div style="padding:10px 14px;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.25);border-radius:10px;margin-bottom:16px;font-size:13px;font-style:italic">"'+r.motivasyon+'"</div>';
+  var plan = r.plan||[], total = 0;
+  plan.forEach(function(item,idx) {
+    total += item.sure||0;
+    var tm = tc[item.track_id]||{color:"#818cf8",label:item.track_id,icon:""};
+    html += '<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'+
+      '<div style="width:28px;height:28px;border-radius:50%;background:'+tm.color+'20;color:'+tm.color+';font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(idx+1)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:'+tm.color+'20;color:'+tm.color+';display:inline-block;margin-bottom:4px">'+tm.icon+' '+tm.label+'</span>'+
+        '<div style="font-size:13px;font-weight:500;line-height:1.4;margin-bottom:2px">'+item.gorev+'</div>'+
+        (item.bolum?'<div style="font-size:11px;color:var(--muted)">'+item.bolum+(item.neden?" · "+item.neden:"")+'</div>':"")+
+      '</div>'+
+      '<div style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);flex-shrink:0;padding-top:4px">'+(item.sure||0)+'dk</div>'+
+      '</div>';
   });
-
-  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-    <span style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace">Toplam: ${total}dk / ${minutes}dk</span>
-    <button onclick="openCoach()" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">← Yeniden Seç</button>
-  </div>
-  <button class="apply-btn" style="margin-top:12px;background:#ec4899" onclick="closeCoach()">Başlayalım 💪</button>`;
-
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">'+
+    '<span style="font-size:12px;color:var(--muted);font-family:\'DM Mono\',monospace">Toplam: '+total+'dk / '+coachMinutes+'dk</span>'+
+    '<button onclick="openCoach()" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer">← Yeniden Seç</button>'+
+    '</div>'+
+    '<button class="apply-btn" style="margin-top:12px;background:#ec4899" onclick="closeCoach()">Başlayalım 💪</button>';
   document.getElementById("coachBody").innerHTML = html;
 }
 
-// ── Test Selector ─────────────────────────────────────────────
+function closeCoach() { document.getElementById("coachOverlay").style.display = "none"; }
+
+// ═══════════════════════════════════════════════════════════════
+// TEST
+// ═══════════════════════════════════════════════════════════════
 function openTestSelector() {
-  const t = data[activeTrack]; const m = t?.meta||{}; if (!t?.sections?.length) { alert("Track boş."); return; }
+  var t = data[activeTrack], m = (t||{}).meta||{};
+  if (!t||!t.sections||!t.sections.length) { alert("Track boş."); return; }
   openModal("test");
-  document.getElementById("modalTitle").textContent = `${m.icon||""} Test Konuları`;
-  document.getElementById("modalBody").innerHTML = `
-    <p class="hint">Hangi bölümlerden test oluşturulsun?</p>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button onclick="selAll(true)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Tümü</button>
-      <button onclick="selAll(false)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Hiçbiri</button>
-    </div>
-    <div id="secList">${t.sections.map((sec,si)=>{
-      const cnt = sec.items.filter(i=>checked[i.id]).length;
-      return `<label class="sec-check-row"><input type="checkbox" id="sec_${si}" ${cnt>0?"checked":""} style="accent-color:${m.color||'#818cf8'}"><span class="sec-check-label">${sec.title}</span><span class="sec-check-count">${cnt}/${sec.items.length}</span></label>`;
-    }).join("")}</div>
-    <button class="apply-btn" style="background:${m.color||'#818cf8'}" onclick="runTest()">Test Oluştur</button>`;
+  document.getElementById("modalTitle").textContent = (m.icon||"")+" Test Konuları";
+  var secHtml = t.sections.map(function(sec,si) {
+    var cnt = sec.items.filter(function(i){ return checked[i.id]; }).length;
+    return '<label class="sec-check-row">'+
+      '<input type="checkbox" id="sec_'+si+'" '+(cnt>0?"checked":"")+' style="accent-color:'+(m.color||"#818cf8")+'">' +
+      '<span class="sec-check-label">'+sec.title+'</span>'+
+      '<span class="sec-check-count">'+cnt+'/'+sec.items.length+'</span></label>';
+  }).join("");
+  document.getElementById("modalBody").innerHTML =
+    '<p class="hint">Hangi bölümlerden test oluşturulsun?</p>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<button onclick="selAll(true)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Tümü</button>'+
+      '<button onclick="selAll(false)" style="font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--text);cursor:pointer">Hiçbiri</button>'+
+    '</div>'+
+    '<div id="secList">'+secHtml+'</div>'+
+    '<button class="apply-btn" style="background:'+(m.color||"#818cf8")+'" onclick="runTest()">Test Oluştur</button>';
 }
 
-function selAll(v) { document.querySelectorAll("#secList input").forEach(cb=>cb.checked=v); }
+function selAll(v) { document.querySelectorAll("#secList input").forEach(function(cb){ cb.checked = v; }); }
 
-async function runTest() {
-  const t = data[activeTrack]; const m = t?.meta||{};
-  const selected = [...document.querySelectorAll("#secList input")].map((cb,si)=>cb.checked?t.sections[si]:null).filter(Boolean);
-  const done = selected.flatMap(s=>s.items.filter(i=>checked[i.id]).map(i=>i.text));
+function runTest() {
+  var t = data[activeTrack], m = (t||{}).meta||{};
+  var selected = [];
+  document.querySelectorAll("#secList input").forEach(function(cb,si){ if (cb.checked && t.sections[si]) selected.push(t.sections[si]); });
+  var done = selected.reduce(function(a,s){ return a.concat(s.items.filter(function(i){ return checked[i.id]; }).map(function(i){ return i.text; })); },[]);
   if (!done.length) { alert("Seçili bölümlerde tiklenmiş madde yok."); return; }
   closeModal();
-  const isGerman = activeTrack==="german";
-  const prompt = isGerman
-    ? `Almanca öğrencisi şu konuları tamamladı:\n${done.join("\n")}\n\n8 soruluk test: 3 çoktan seçmeli (4 şık, doğrusu işaretli), 3 boşluk doldurma, 2 cümle yazma. Türkçe açıklamalı, Almanca pratikli. Her sorudan sonra kural hatırlatması.`
-    : `Student completed:\n${done.join("\n")}\n\n8 questions: 3 multiple choice (mark correct), 3 short answer, 2 practical. Brief explanation after each.`;
-  showTestOutput(`${m.icon||""} Test — ${done.length} madde`, prompt);
+  var isGerman = activeTrack === "german";
+  var prompt = isGerman
+    ? "Almanca öğrencisi şu konuları tamamladı:\n"+done.join("\n")+"\n\n8 soruluk test: 3 çoktan seçmeli (4 şık, doğrusu işaretli), 3 boşluk doldurma, 2 cümle yazma. Türkçe açıklamalı, Almanca pratikli. Her sorudan sonra kural hatırlatması."
+    : "Student completed:\n"+done.join("\n")+"\n\n8 questions: 3 multiple choice (mark correct), 3 short answer, 2 practical. Brief explanation after each.";
+  showTestOutput((m.icon||"")+" Test — "+done.length+" madde", prompt);
 }
 
-async function showTestOutput(title, prompt) {
-  let el = document.getElementById("testOutput");
+function showTestOutput(title, prompt) {
+  var el = document.getElementById("testOutput");
   if (!el) {
     el = document.createElement("div"); el.id = "testOutput"; el.className = "test-output";
-    const hdr = document.createElement("div"); hdr.className = "test-header";
-    const titleEl = document.createElement("span"); titleEl.id = "testTitle";
-    const cls = document.createElement("button"); cls.className = "test-close-btn"; cls.style.cssText="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px"; cls.textContent="✕"; cls.onclick=()=>el.style.display="none";
-    hdr.append(titleEl, cls);
-    const body = document.createElement("div"); body.id = "testBody"; body.className = "test-body";
+    var hdr = document.createElement("div"); hdr.className = "test-header";
+    var titleEl = document.createElement("span"); titleEl.id = "testTitle";
+    var closeBtn = document.createElement("button");
+    closeBtn.style.cssText = "background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px";
+    closeBtn.textContent = "✕"; closeBtn.onclick = function(){ el.style.display="none"; };
+    hdr.append(titleEl, closeBtn);
+    var body = document.createElement("div"); body.id = "testBody"; body.className = "test-body";
     el.append(hdr, body);
     document.getElementById("sectionsContainer").after(el);
   }
   el.style.display = "block";
   document.getElementById("testTitle").textContent = title;
-  document.getElementById("testBody").innerHTML = `<span class="dot"></span><span class="dot"></span><span class="dot"></span>`;
+  document.getElementById("testBody").innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
   el.scrollIntoView({behavior:"smooth"});
-  try {
-    const text = await callAI(prompt);
-    document.getElementById("testBody").textContent = text;
-  } catch(e) { document.getElementById("testBody").textContent = "Hata: " + e.message; }
+  callAI(prompt, false, function(text, err) {
+    var bodyEl = document.getElementById("testBody");
+    if (bodyEl) bodyEl.textContent = err ? "Hata: "+err : text;
+  });
 }
 
-function closeCoach() { document.getElementById("coachOverlay").style.display="none"; }
-
-// ── Modals ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════
 function openModal(type) {
   document.getElementById("modalOverlay").style.display = "flex";
-  if (type==="route") return; // content set by caller
+  if (type === "test") return;
+  var title = document.getElementById("modalTitle");
+  var body  = document.getElementById("modalBody");
 
-  const title = document.getElementById("modalTitle");
-  const body  = document.getElementById("modalBody");
-
-  if (type==="import") {
+  if (type === "import") {
     title.textContent = "JSON Yükle";
-    body.innerHTML = `<div class="radio-row"><label class="radio-label"><input type="radio" name="mode" value="merge" checked onchange="currentMode='merge'"> Mevcut üzerine ekle</label><label class="radio-label"><input type="radio" name="mode" value="replace" onchange="currentMode='replace'"> Tamamını değiştir</label></div><label class="file-btn">📁 Dosyadan Aç<input type="file" accept=".json" style="display:none" onchange="readFile(this)"></label><textarea id="jsonInput" rows="9" placeholder='{"track":"german","section":"Konu","items":[...]}'></textarea><div id="jsonErr" class="error-msg"></div><button class="apply-btn" onclick="submitJson()">Uygula</button>`;
+    body.innerHTML =
+      '<div class="radio-row">'+
+        '<label class="radio-label"><input type="radio" name="mode" value="merge" checked onchange="currentMode=\'merge\'"> Mevcut üzerine ekle</label>'+
+        '<label class="radio-label"><input type="radio" name="mode" value="replace" onchange="currentMode=\'replace\'"> Tamamını değiştir</label>'+
+      '</div>'+
+      '<label class="file-btn">📁 Dosyadan Aç<input type="file" accept=".json" style="display:none" onchange="readFile(this)"></label>'+
+      '<textarea id="jsonInput" rows="9" placeholder=\'{"track":"german","section":"Konu","items":[...]}\' style="margin-bottom:0"></textarea>'+
+      '<div id="jsonErr" class="error-msg"></div>'+
+      '<button class="apply-btn" onclick="submitJson()">Uygula</button>';
   }
-  if (type==="firebase") {
+
+  if (type === "firebase") {
     title.textContent = "☁ Firebase Sync";
-    buildFirebaseModal(body);
+    var savedKey = "";
+    try { savedKey = localStorage.getItem("skt_fb_key") || ""; } catch(e) {}
+    body.innerHTML = "";
+    var hint = document.createElement("p"); hint.className = "hint";
+    hint.innerHTML = "<strong>1.</strong> console.firebase.google.com → New project<br><strong>2.</strong> Realtime Database → Test mode<br><strong>3.</strong> Project Settings → Web app → Config'i kopyala";
+    var lbl1 = document.createElement("label"); lbl1.className = "settings-label"; lbl1.textContent = "Firebase Config";
+    var ta = document.createElement("textarea"); ta.id = "fbCfg"; ta.rows = 7; ta.placeholder = '{"apiKey":"AIza...","databaseURL":"https://...","projectId":"..."}';
+    var lbl2 = document.createElement("label"); lbl2.className = "settings-label"; lbl2.textContent = "Sync Key";
+    var inp = document.createElement("input"); inp.type = "text"; inp.id = "fbKey"; inp.placeholder = "tarik2026"; inp.value = savedKey;
+    var errDiv = document.createElement("div"); errDiv.id = "fbErr"; errDiv.className = "error-msg";
+    var btn = document.createElement("button"); btn.className = "apply-btn"; btn.textContent = "Bağlan";
+    btn.onclick = submitFirebase;
+    body.append(hint, lbl1, ta, lbl2, inp, errDiv, btn);
+    if (db) {
+      var disc = document.createElement("button");
+      disc.style.cssText = "width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:13px";
+      disc.textContent = "Bağlantıyı Kes"; disc.onclick = disconnectFirebase;
+      body.append(disc);
+    }
   }
-  if (type==="format") {
+
+  if (type === "format") {
     title.textContent = "JSON Format";
-    body.innerHTML = `<p class="hint">Claude'dan "dbt için JSON yaz" veya "MLflow konuları JSON üret" iste.</p><pre class="format-block">// Tek bölüm:
-{
-  "track": "german",
-  "section": "B2 İleri",
-  "items": [
-    {"id":"x01","text":"Görev","note":"İpucu"}
-  ]
-}
-
-// Yeni track:
-{
-  "track": "dbt",
-  "trackLabel": "dbt",
-  "icon": "🔧",
-  "color": "#34d399",
-  "section": "Kurulum",
-  "items": [{"id":"d01","text":"dbt kur"}]
-}</pre>`;
-  }
-  if (type==="test") return; // content set by openTestSelector
-}
-
-function buildFirebaseModal(body) {
-  var savedKey = "";
-  try { savedKey = localStorage.getItem("skt_fb_key") || ""; } catch(e) {}
-
-  var p = document.createElement("p");
-  p.className = "hint";
-  p.innerHTML = "<strong>1.</strong> console.firebase.google.com → New project<br><strong>2.</strong> Realtime Database → Test mode<br><strong>3.</strong> Project Settings → Web app → Config'i kopyala";
-
-  var lbl1 = document.createElement("label");
-  lbl1.className = "settings-label";
-  lbl1.textContent = "Firebase Config (JS veya JSON olarak yapıştır)";
-
-  var ta = document.createElement("textarea");
-  ta.id = "fbCfg"; ta.rows = 7;
-  ta.placeholder = '{"apiKey":"AIza...","databaseURL":"https://...","projectId":"..."}';
-  ta.style.marginBottom = "10px";
-
-  var lbl2 = document.createElement("label");
-  lbl2.className = "settings-label";
-  lbl2.textContent = "Sync Key";
-
-  var inp = document.createElement("input");
-  inp.type = "text"; inp.id = "fbKey";
-  inp.placeholder = "tarik2026"; inp.value = savedKey;
-  inp.style.marginBottom = "0";
-
-  var err = document.createElement("div");
-  err.id = "fbErr"; err.className = "error-msg";
-
-  var btn = document.createElement("button");
-  btn.className = "apply-btn";
-  btn.textContent = "Bağlan";
-  btn.onclick = submitFirebase;
-
-  body.innerHTML = "";
-  body.append(p, lbl1, ta, lbl2, inp, err, btn);
-
-  if (db) {
-    var disc = document.createElement("button");
-    disc.textContent = "Bağlantıyı Kes";
-    disc.style.cssText = "width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:13px";
-    disc.onclick = disconnectFirebase;
-    body.append(disc);
+    body.innerHTML = '<p class="hint">Claude\'dan "dbt için JSON yaz" gibi iste, kopyala-yapıştır.</p>'+
+      '<pre class="format-block">// Bölüm ekle:\n{\n  "track": "german",\n  "section": "B2 İleri",\n  "items": [\n    {"id":"x01","text":"Görev","note":"İpucu"}\n  ]\n}\n\n// Yeni track:\n{\n  "track": "dbt",\n  "trackLabel": "dbt",\n  "icon": "🔧",\n  "color": "#34d399",\n  "section": "Kurulum",\n  "items": [{"id":"d01","text":"dbt kur"}]\n}</pre>';
   }
 }
-
 
 function submitFirebase() {
-  const raw = document.getElementById("fbCfg").value.trim();
-  const key = document.getElementById("fbKey").value.trim();
-  const errEl = document.getElementById("fbErr");
-  if (!raw) { errEl.textContent="⚠ Config boş — Firebase config'i yapıştır"; return; }
-  if (!key) { errEl.textContent="⚠ Sync key boş"; return; }
-  let cfg;
+  var raw = document.getElementById("fbCfg").value.trim();
+  var key = document.getElementById("fbKey").value.trim();
+  var errEl = document.getElementById("fbErr");
+  if (!raw) { errEl.textContent = "⚠ Config boş"; return; }
+  if (!key) { errEl.textContent = "⚠ Sync key boş"; return; }
+  var cfg;
   try {
-    const normalized = raw.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+    var normalized = raw.replace(/([{,]\s*)([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
     cfg = JSON.parse(normalized);
-  } catch(e) {
-    errEl.textContent="⚠ JSON parse hatası: " + e.message;
-    return;
-  }
-  if (!cfg.databaseURL) { errEl.textContent="⚠ databaseURL bulunamadı — tüm config'i yapıştır"; return; }
-  errEl.textContent="";
-  try {
-    // Delete existing Firebase app if any
-    if (firebase.apps.length) {
-      firebase.apps.forEach(app => app.delete());
-    }
-    firebase.initializeApp(cfg);
-    db = firebase.database();
-    syncKey = key;
-    try { localStorage.setItem("skt_fb_config", JSON.stringify(cfg)); } catch {}
-    try { localStorage.setItem("skt_fb_key", key); } catch {}
-    // Start realtime listener
-    db.ref(key).on("value", snap => {
-      const val = snap.val();
-      if (!val) { db.ref(key).set({ data, checked, userDescs }); return; }
-      if (val.data)      { data      = val.data;      try{localStorage.setItem("skt_data",    JSON.stringify(data));}catch{} }
-      if (val.checked)   { checked   = val.checked;   try{localStorage.setItem("skt_checked", JSON.stringify(checked));}catch{} }
-      if (val.userDescs) { userDescs = val.userDescs; try{localStorage.setItem("skt_descs",   JSON.stringify(userDescs));}catch{} }
-      if (!activeTrack || !data[activeTrack]) activeTrack = Object.keys(data)[0] || "";
-      render(); setSyncStatus("synced");
-    }, () => setSyncStatus("offline"));
-    setSyncStatus("syncing");
-    closeModal();
-    toast("☁ Firebase bağlandı!", 3000);
-  } catch(e) {
-    errEl.textContent="⚠ Firebase hatası: " + e.message;
-  }
+  } catch(e) { errEl.textContent = "⚠ JSON hatası: "+e.message; return; }
+  if (!cfg.databaseURL) { errEl.textContent = "⚠ databaseURL bulunamadı"; return; }
+  errEl.textContent = "";
+  connectFirebase(cfg, key);
+  closeModal();
+  toast("☁ Bağlanıyor...", 2000);
 }
-function disconnectFirebase() { if(db) db.ref(syncKey).off(); db=null; syncKey=""; try{localStorage.removeItem("skt_fb_config");localStorage.removeItem("skt_fb_key");}catch{} setSyncStatus("nokey"); closeModal(); }
 
-function closeModal() { document.getElementById("modalOverlay").style.display="none"; }
-function readFile(input) { const r=new FileReader(); r.onload=e=>document.getElementById("jsonInput").value=e.target.result; r.readAsText(input.files[0]); }
-function submitJson() { const err=applyJson(document.getElementById("jsonInput").value.trim(),currentMode); if(err){document.getElementById("jsonErr").textContent="⚠ "+err;return;} closeModal(); }
+function disconnectFirebase() {
+  if (db) { try { db.ref(syncKey).off(); } catch(e) {} }
+  db = null; syncKey = "";
+  try { localStorage.removeItem("skt_fb_config"); localStorage.removeItem("skt_fb_key"); } catch(e) {}
+  setSyncStatus("nokey");
+  closeModal();
+}
+
+function closeModal() { document.getElementById("modalOverlay").style.display = "none"; }
+function readFile(input) {
+  var r = new FileReader();
+  r.onload = function(e) { document.getElementById("jsonInput").value = e.target.result; };
+  r.readAsText(input.files[0]);
+}
+function submitJson() {
+  var err = applyJson(document.getElementById("jsonInput").value.trim(), currentMode);
+  if (err) { document.getElementById("jsonErr").textContent = "⚠ "+err; return; }
+  closeModal();
+}
 
 function logout() { localStorage.removeItem("skill_token"); window.location.replace("/login.html"); }
 
-// ── Default Data ──────────────────────────────────────────────
-const DEFAULT_DATA = {};
-
-// ── Init ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
 load();
 render();
 updatePomoUI();
