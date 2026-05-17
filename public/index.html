@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="Skill Tracker">
 <meta name="theme-color" content="#0f0f0f">
 <link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23ec4899'/><text y='22' x='4' font-size='20'>🎯</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23ec4899'/><text y='22' x='4' font-size='20'>🎯</text></svg>">
 <title>Skill Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -164,6 +166,11 @@ pre.format-block{background:var(--bg);border:1px solid var(--border);border-radi
 .loading-center{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;color:var(--muted)}
 @keyframes pulse{0%,100%{opacity:0.3}50%{opacity:1}}
 @keyframes spin{to{transform:rotate(360deg)}}
+.ribbon{display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap}
+.ribbon-btn{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:none;color:var(--text);font-size:11px;font-weight:600;cursor:pointer;font-family:"DM Sans",sans-serif;white-space:nowrap}
+.ribbon-btn:hover{background:var(--surface2)}
+.ribbon-btn.accent{border-color:var(--accent);color:var(--accent)}
+.ribbon-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
 .section-sep{padding:10px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border)}
 </style>
 </head>
@@ -208,13 +215,19 @@ pre.format-block{background:var(--bg);border:1px solid var(--border);border-radi
 
   <!-- View: Todos -->
   <div class="view active" id="view-todos">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
-      <div class="track-tabs" id="trackTabs" style="padding:0;border:none;flex:1"></div>
-      <button class="icon-btn" onclick="openImport()"         title="JSON Yükle">+</button>
-      <button class="icon-btn" onclick="toggleAllSections()" id="collapseBtn" title="Tümünü Kapat/Aç">⊟</button>
-      <button class="icon-btn" onclick="exportChecked()"     title="Tiklenenlerı Kopyala">📋</button>
-      <button class="icon-btn" onclick="exportCheckedJson()" title="JSON İndir">↓</button>
+    <!-- Ribbon -->
+    <div class="ribbon">
+      <button class="ribbon-btn accent" onclick="openImport()">+ JSON Yükle</button>
+      <div class="ribbon-sep"></div>
+      <button class="ribbon-btn" onclick="toggleAllSections()" id="collapseBtn">⊟ Tümünü Kapat</button>
+      <button class="ribbon-btn" onclick="expandAllSections()">⊞ Tümünü Aç</button>
+      <div class="ribbon-sep"></div>
+      <button class="ribbon-btn" onclick="exportChecked()">📋 Kopyala</button>
+      <button class="ribbon-btn" onclick="exportCheckedJson()">↓ JSON İndir</button>
+      <button class="ribbon-btn" onclick="exportData()">↓ Tümünü</button>
     </div>
+    <!-- Track tabs -->
+    <div class="track-tabs" id="trackTabs"></div>
     <div id="sectionsContainer" class="sections"></div>
   </div>
 
@@ -351,6 +364,7 @@ var currentMode = "merge";
 var coachMinutes = 60;
 var testActiveTrack = "";
 var selectedTestItems = {};
+var testCollapsed = {};
 
 // ═══════════════════════════════════════════════════════════════
 // NAVIGATION
@@ -579,9 +593,18 @@ function toggleSection(sk) {
   renderSections();
 }
 
+function expandAllSections() {
+  allCollapsed = false;
+  collapsed = {};
+  var btn = document.getElementById("collapseBtn");
+  if (btn) btn.textContent = "⊟ Tümünü Kapat";
+  renderSections();
+}
+
 function toggleAllSections() {
-  allCollapsed=!allCollapsed;
-  document.getElementById("collapseBtn").style.opacity=allCollapsed?"1":"0.7";
+  allCollapsed = !allCollapsed;
+  var btn = document.getElementById("collapseBtn");
+  if (btn) btn.textContent = allCollapsed ? "⊟ Tümü Kapalı" : "⊟ Tümünü Kapat";
   renderSections();
 }
 
@@ -725,27 +748,68 @@ function renderTestItems() {
   var t=data[testActiveTrack];
   if(!t||!t.sections||!t.sections.length){listEl.innerHTML='<div class="empty"><p style="font-size:13px">Bu track boş.</p></div>';return;}
   var color=trackColor(testActiveTrack);
-
-  // Show only checked items
-  var html="";
   var hasChecked=false;
+  (t.sections||[]).forEach(function(sec){
+    if(sec.items.filter(function(i){return checked[i.id];}).length) hasChecked=true;
+  });
+  if(!hasChecked){listEl.innerHTML='<div class="empty"><p style="font-size:13px">Bu track\'te tamamlanmış madde yok.<br>Önce görevleri tikle.</p></div>';return;}
+
+  // Select all / none toolbar
+  var html='<div style="display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap">'+
+    '<button class="ribbon-btn accent" onclick="selectAllTestItems()">✓ Tümünü Seç</button>'+
+    '<button class="ribbon-btn" onclick="deselectAllTestItems()">✗ Hiçbirini Seçme</button>'+
+    '<div class="ribbon-sep"></div>'+
+    '<button class="ribbon-btn" onclick="expandAllTestSections()">⊞ Aç</button>'+
+    '<button class="ribbon-btn" onclick="collapseAllTestSections()">⊟ Kapat</button>'+
+    '</div>';
+
   (t.sections||[]).forEach(function(sec,si){
     var checkedItems=sec.items.filter(function(i){return checked[i.id];});
     if(!checkedItems.length) return;
-    hasChecked=true;
-    html+='<div class="test-section-header">'+
-      '<input type="checkbox" id="tsec_'+si+'" onchange="toggleTestSection('+si+',this.checked)" style="accent-color:'+color+'">'+
-      '<label for="tsec_'+si+'" style="cursor:pointer;flex:1;font-size:11px;font-weight:700;color:var(--muted)">'+sec.title+' ('+checkedItems.length+')</label>'+
+    var isCol=!!testCollapsed[testActiveTrack+"-"+si];
+    html+='<div class="test-section-header" style="cursor:pointer" onclick="toggleTestSectionCollapse('+si+')">'+
+      '<input type="checkbox" id="tsec_'+si+'" onchange="toggleTestSection('+si+',this.checked)" style="accent-color:'+color+'" onclick="event.stopPropagation()">'+
+      '<label style="flex:1;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer">'+sec.title+' ('+checkedItems.length+')</label>'+
+      '<span style="font-size:10px;color:var(--muted)">'+(isCol?"▼":"▲")+'</span>'+
       '</div>';
-    checkedItems.forEach(function(item){
-      html+='<div class="test-item-row" onclick="toggleTestItem(\''+item.id+'\')" id="trow_'+item.id+'">'+
-        '<input type="checkbox" id="ti_'+item.id+'" style="accent-color:'+color+';flex-shrink:0;margin-top:2px" onclick="event.stopPropagation();toggleTestItem(\''+item.id+'\')">'+
-        '<span class="test-item-text">'+item.text+'</span>'+
-        '</div>';
+    if(!isCol){
+      checkedItems.forEach(function(item){
+        html+='<div class="test-item-row" onclick="toggleTestItem(\''+item.id+'\')" id="trow_'+item.id+'">'+
+          '<input type="checkbox" id="ti_'+item.id+'" style="accent-color:'+color+';flex-shrink:0;margin-top:2px" onclick="event.stopPropagation();toggleTestItem(\''+item.id+'\')">'+
+          '<span class="test-item-text">'+item.text+'</span>'+
+          '</div>';
+      });
+    }
+  });
+  listEl.innerHTML=html;
+  updateTestSelCount();
+}
+
+function toggleTestSectionCollapse(si) {
+  var key=testActiveTrack+"-"+si;
+  testCollapsed[key]=!testCollapsed[key];
+  renderTestItems();
+}
+function expandAllTestSections(){testCollapsed={};renderTestItems();}
+function collapseAllTestSections(){
+  var t=data[testActiveTrack]; if(!t) return;
+  (t.sections||[]).forEach(function(_,si){testCollapsed[testActiveTrack+"-"+si]=true;});
+  renderTestItems();
+}
+function selectAllTestItems(){
+  var t=data[testActiveTrack]; if(!t) return;
+  (t.sections||[]).forEach(function(sec,si){
+    sec.items.filter(function(i){return checked[i.id];}).forEach(function(item){
+      selectedTestItems[item.id]=true;
+      var cb=document.getElementById("ti_"+item.id); if(cb) cb.checked=true;
+      var sc=document.getElementById("tsec_"+si); if(sc) sc.checked=true;
     });
   });
-  if(!hasChecked) html='<div class="empty"><p style="font-size:13px">Bu track\'te tamamlanmış madde yok.<br>Önce görevleri tikle.</p></div>';
-  listEl.innerHTML=html;
+  updateTestSelCount();
+}
+function deselectAllTestItems(){
+  selectedTestItems={};
+  document.querySelectorAll("#testItemList input[type=checkbox]").forEach(function(cb){cb.checked=false;});
   updateTestSelCount();
 }
 
@@ -850,7 +914,12 @@ function renderCoachSetup() {
   var selEl=document.getElementById("coachTrackSel"); if(!selEl) return;
   var timeBtns=document.getElementById("timeButtons"); if(!timeBtns) return;
   var visible=trackOrder.filter(function(t){return !archivedTracks[t];});
-  selEl.innerHTML=visible.map(function(tid){
+  selEl.innerHTML=
+    '<div style="display:flex;gap:6px;margin-bottom:10px">'+
+    '<button class="ribbon-btn accent" onclick="selectAllCoachTracks()">✓ Tümünü Seç</button>'+
+    '<button class="ribbon-btn" onclick="deselectAllCoachTracks()">✗ Hiçbirini Seçme</button>'+
+    '</div>'+
+    visible.map(function(tid){
     var t=data[tid],m=t.meta||{};
     var remaining=(t.sections||[]).reduce(function(a,s){return a+s.items.filter(function(i){return !checked[i.id];}).length;},0);
     if(!remaining) return "";
@@ -874,6 +943,13 @@ function setCoachTime(mins) {
     var btn=document.getElementById("ct"+m);
     if(btn){btn.style.background=m===mins?"var(--accent)":"var(--surface2)";btn.style.color=m===mins?"#000":"var(--text)";}
   });
+}
+
+function selectAllCoachTracks() {
+  document.querySelectorAll(".coach-track-sel").forEach(function(cb){ cb.checked=true; });
+}
+function deselectAllCoachTracks() {
+  document.querySelectorAll(".coach-track-sel").forEach(function(cb){ cb.checked=false; });
 }
 
 function generateCoachPlan() {
