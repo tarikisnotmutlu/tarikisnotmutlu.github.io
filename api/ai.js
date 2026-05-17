@@ -1,13 +1,18 @@
-// api/ai.js — OpenAI proxy, API key server'da kalır
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
+
+  // Token doğrula
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace('Bearer ', '');
+  const validToken = process.env.AUTH_TOKEN || 'tarik_skill_2026';
+  if (token !== validToken) return res.status(401).json({ error: 'Unauthorized' });
 
   const { messages, jsonMode } = req.body || {};
   if (!messages) return res.status(400).json({ error: 'messages required' });
-
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY env var eksik' });
-  }
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
