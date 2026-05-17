@@ -7,49 +7,24 @@
 <title>Skill Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0f0f0f; --surface: #1a1a1a; --border: #2a2a2a;
-    --text: #f0f0f0; --muted: #666; --pink: #ec4899;
-  }
-  body {
-    font-family: 'DM Sans', system-ui, sans-serif;
-    background: var(--bg); color: var(--text);
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-  }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 40px 28px;
-    width: 100%; max-width: 380px;
-  }
-  .top { text-align: center; margin-bottom: 32px; }
-  .icon { font-size: 44px; margin-bottom: 14px; }
-  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .sub { font-size: 13px; color: var(--muted); }
-
-  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
-  input[type="password"] {
-    width: 100%; padding: 13px 16px;
-    background: var(--bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 10px;
-    font-size: 15px; font-family: inherit;
-    outline: none; margin-bottom: 14px;
-    /* NO letter-spacing, NO text-align center — iOS numpad'i önler */
-  }
-  input[type="password"]:focus { border-color: var(--pink); }
-
-  button {
-    width: 100%; padding: 13px;
-    background: var(--pink); color: #000;
-    border: none; border-radius: 10px;
-    font-size: 15px; font-weight: 700; font-family: inherit;
-    cursor: pointer; transition: opacity 0.15s;
-  }
-  button:active { opacity: 0.8; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .error { font-size: 12px; color: #f87171; margin-top: 10px; min-height: 16px; text-align: center; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;background:#0f0f0f;color:#f0f0f0;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;
+    padding:40px 28px;width:100%;max-width:380px}
+  .top{text-align:center;margin-bottom:28px}
+  .icon{font-size:44px;margin-bottom:12px}
+  h1{font-size:22px;font-weight:700;margin-bottom:4px}
+  .sub{font-size:13px;color:#666}
+  label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:6px}
+  input{width:100%;padding:13px 16px;background:#0f0f0f;color:#f0f0f0;
+    border:1px solid #333;border-radius:10px;font-size:15px;
+    font-family:inherit;outline:none;margin-bottom:14px}
+  input:focus{border-color:#ec4899}
+  button{width:100%;padding:13px;background:#ec4899;color:#000;border:none;
+    border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+  button:disabled{opacity:0.5;cursor:not-allowed}
+  .err{font-size:12px;color:#f87171;margin-top:10px;text-align:center;min-height:16px}
 </style>
 </head>
 <body>
@@ -59,48 +34,48 @@
     <h1>Skill Tracker</h1>
     <div class="sub">Kişisel Öğrenme Koçun</div>
   </div>
-
   <label for="pw">Şifre</label>
-  <input
-    type="password"
-    id="pw"
-    placeholder="Şifreni gir"
-    autocomplete="current-password"
-    inputmode="text"
-    maxlength="100"
-    onkeydown="if(event.key==='Enter') login()"
-  >
-
+  <input type="password" id="pw" placeholder="Şifreni gir"
+    autocomplete="current-password" inputmode="text"
+    onkeydown="if(event.key==='Enter')login()">
   <button id="btn" onclick="login()">Giriş Yap</button>
-  <div class="error" id="err"></div>
+  <div class="err" id="err"></div>
 </div>
-
 <script>
+  // Zaten giriş yaptıysa direkt geç
+  if (localStorage.getItem('skill_token')) window.location.href = '/index.html';
+
   async function login() {
-    const pw = document.getElementById('pw').value;
+    const pw  = document.getElementById('pw').value;
     const btn = document.getElementById('btn');
     const err = document.getElementById('err');
-    if (!pw.trim()) { err.textContent = 'Şifre boş olamaz.'; return; }
-    btn.disabled = true; btn.textContent = 'Kontrol ediliyor...'; err.textContent = '';
+    if (!pw.trim()) { err.textContent = 'Şifre boş olamaz'; return; }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+    err.textContent = '';
+
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pw })
       });
-      if (res.ok) {
-        window.location.href = '/index.html';
+      const d = await res.json();
+      if (res.ok && d.token) {
+        localStorage.setItem('skill_token', d.token);
+        window.location.replace('/index.html');
       } else {
-        const d = await res.json();
-        err.textContent = d.error || 'Yanlış şifre.';
+        err.textContent = d.error || 'Yanlış şifre';
       }
     } catch(e) {
       err.textContent = 'Bağlantı hatası: ' + e.message;
     }
-    btn.disabled = false; btn.textContent = 'Giriş Yap';
+
+    btn.disabled = false;
+    btn.textContent = 'Giriş Yap';
   }
 
-  // Sayfa açılınca input'a odaklan
   window.addEventListener('load', () => document.getElementById('pw').focus());
 </script>
 </body>
