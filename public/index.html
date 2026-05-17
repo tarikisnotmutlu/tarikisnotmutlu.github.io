@@ -39,7 +39,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .pomo-time.break { color: #34d399; }
 .pomo-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; padding: 4px 10px; cursor: pointer; }
 .pomo-progress { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
-.pomo-fill { height: 100%; border-radius: 2px; transition: width 0.9s linear; }
+.pomo-fill { height: 100%; border-radius: 2px; transition: none; }
 .pomo-fill.work  { background: #818cf8; }
 .pomo-fill.break { background: #34d399; }
 
@@ -332,15 +332,18 @@ function updateStreak() {
 
 // ── Pomodoro ──────────────────────────────────────────────────
 function updatePomoUI() {
-  const m = Math.floor(pomoSeconds/60).toString().padStart(2,"0");
-  const s = (pomoSeconds%60).toString().padStart(2,"0");
-  document.getElementById("pomoTime").textContent = `${m}:${s}`;
-  document.getElementById("pomoTime").className = `pomo-time ${pomoIsBreak?"break":"work"}`;
-  document.getElementById("pomoBtnEl").textContent = pomoRunning ? "⏸" : "▶";
-  document.getElementById("pomoLabel").textContent = pomoIsBreak ? "MOLA" : "ÇALIŞMA";
-  const fill = document.getElementById("pomoFill");
-  fill.style.width = (pomoSeconds/pomoTotal*100)+"%";
-  fill.className = `pomo-fill ${pomoIsBreak?"break":"work"}`;
+  try {
+    var mm = Math.floor(pomoSeconds/60).toString().padStart(2,"0");
+    var ss = (pomoSeconds%60).toString().padStart(2,"0");
+    var timeEl = document.getElementById("pomoTime");
+    var btnEl  = document.getElementById("pomoBtnEl");
+    var lblEl  = document.getElementById("pomoLabel");
+    var fill   = document.getElementById("pomoFill");
+    if (timeEl) { timeEl.textContent = mm+":"+ss; timeEl.className = "pomo-time "+(pomoIsBreak?"break":"work"); }
+    if (btnEl)  { btnEl.textContent = pomoRunning ? "⏸" : "▶"; }
+    if (lblEl)  { lblEl.textContent = pomoIsBreak ? "MOLA" : "ÇALIŞMA"; }
+    if (fill)   { fill.style.width = Math.round(pomoSeconds/pomoTotal*100)+"%"; fill.className = "pomo-fill "+(pomoIsBreak?"break":"work"); }
+  } catch(e) { console.error("pomoUI error:", e); }
 }
 function togglePomo() {
   if (pomoRunning) { clearInterval(pomoInterval); pomoRunning = false; }
@@ -616,8 +619,7 @@ function openModal(type) {
   }
   if (type==="firebase") {
     title.textContent = "☁ Firebase Sync";
-    const savedKey = (() => { try { return localStorage.getItem("skt_fb_key")||""; } catch { return ""; } })();
-    body.innerHTML = `<p class="hint"><strong>1.</strong> console.firebase.google.com → New project<br><strong>2.</strong> Realtime Database → Test mode<br><strong>3.</strong> Project Settings → Web app → Config</p><label class="settings-label">Firebase Config</label><textarea id="fbCfg" rows="7" placeholder='{"apiKey":"...","databaseURL":"..."}'></textarea><label class="settings-label" style="margin-top:10px">Sync Key</label><input type="text" id="fbKey" placeholder="tarik2026" value="${savedKey}" style="margin-bottom:0"><div id="fbErr" class="error-msg"></div><button class="apply-btn" onclick="submitFirebase()">Bağlan</button>${db?`<button style="width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer" onclick="disconnectFirebase()">Bağlantıyı Kes</button>`:""}`;
+    buildFirebaseModal(body);
   }
   if (type==="format") {
     title.textContent = "JSON Format";
@@ -642,6 +644,57 @@ function openModal(type) {
   }
   if (type==="test") return; // content set by openTestSelector
 }
+
+function buildFirebaseModal(body) {
+  var savedKey = "";
+  try { savedKey = localStorage.getItem("skt_fb_key") || ""; } catch(e) {}
+
+  var p = document.createElement("p");
+  p.className = "hint";
+  p.innerHTML = "<strong>1.</strong> console.firebase.google.com → New project<br><strong>2.</strong> Realtime Database → Test mode<br><strong>3.</strong> Project Settings → Web app → Config'i kopyala";
+
+  var lbl1 = document.createElement("label");
+  lbl1.className = "settings-label";
+  lbl1.textContent = "Firebase Config (JS veya JSON olarak yapıştır)";
+
+  var ta = document.createElement("textarea");
+  ta.id = "fbCfg"; ta.rows = 7;
+  ta.placeholder = '{
+  "apiKey": "AIza...",
+  "databaseURL": "https://...",
+  "projectId": "..."
+}';
+  ta.style.marginBottom = "10px";
+
+  var lbl2 = document.createElement("label");
+  lbl2.className = "settings-label";
+  lbl2.textContent = "Sync Key";
+
+  var inp = document.createElement("input");
+  inp.type = "text"; inp.id = "fbKey";
+  inp.placeholder = "tarik2026"; inp.value = savedKey;
+  inp.style.marginBottom = "0";
+
+  var err = document.createElement("div");
+  err.id = "fbErr"; err.className = "error-msg";
+
+  var btn = document.createElement("button");
+  btn.className = "apply-btn";
+  btn.textContent = "Bağlan";
+  btn.onclick = submitFirebase;
+
+  body.innerHTML = "";
+  body.append(p, lbl1, ta, lbl2, inp, err, btn);
+
+  if (db) {
+    var disc = document.createElement("button");
+    disc.textContent = "Bağlantıyı Kes";
+    disc.style.cssText = "width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:inherit;font-size:13px";
+    disc.onclick = disconnectFirebase;
+    body.append(disc);
+  }
+}
+
 
 function submitFirebase() {
   const raw = document.getElementById("fbCfg").value.trim();
